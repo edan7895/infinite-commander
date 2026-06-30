@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Infinite Commander</title>
+  <link rel="stylesheet" href="./css/style.css">
+
+<!-- 先全部注释，等开通后再取消 -->
+<!-- <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script> -->
+
+</head>
+<body>
+
+  <!-- ============================================================
+       启动界面
+       ============================================================ -->
+  <div id="view-start" class="view">
+    <div id="gs-container">
+      <h1>⚔️ Infinite Commander</h1>
+      <h2>军魂飞升</h2>
+      <div class="panel">
+        <p>Infinite Commander<br>军魂飞升</p>
+        <p class="sub">From Recruit to Marshal · Idle Progression · Boss Battles · Legion Wars</p>
+      </div>
+      <div class="btn-group">
+        <button id="lang-zh-btn" onclick="switchLang('zh');">中文</button>
+        <button id="lang-en-btn" class="en-btn" onclick="switchLang('en');">English</button>
+      </div>
+      <button class="btn-start" onclick="startGame();">Begin Command</button>
+      <div class="info" id="save-info">📁 New Game</div>
+      <div class="version">v1.0 · Part 8</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       开场故事
+       ============================================================ -->
+  <div id="view-story" class="view" style="display:none;">
+    <div id="story-container">
+      <div id="story-text"></div>
+      <button class="btn btn-gold" id="story-next-btn" onclick="nextStory();">Continue ▶</button>
+      <button class="btn btn-ghost" id="story-skip-btn" onclick="skipStory();" style="margin-top:10px;">Skip</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       主界面
+       ============================================================ -->
+  <div id="view-main" class="view" style="display:none;">
+    <div id="main-ui">
+
+      <!-- 顶部状态栏 -->
+      <div class="glass-card top-bar">
+        <div class="left">
+          <span class="rank-display">⭐ <span id="rank-name">Recruit</span></span>
+          <span class="stars-display" id="stars-display">☆☆☆☆☆</span>
+          <span class="badge badge-warning">CP: <span id="cp">10</span></span>
+        </div>
+        <div class="right">
+          <span>💰 <span class="text-gold" id="gold">1,000</span></span>
+          <span>📊 <span class="text-green"><span id="exp">0</span>/<span id="exp-needed">500</span></span></span>
+          <span>💀 <span class="text-red" id="kills">0</span></span>
+        </div>
+      </div>
+
+      <!-- 主内容 -->
+      <div class="grid-2">
+
+        <!-- ====== 左列 ====== -->
+        <div class="glass-card">
+
+          <!-- 经验条 -->
+          <div class="stat-row">
+            <div class="stat-label"><span id="exp-label">EXP</span></div>
+            <div class="stat-value"><span id="exp2">0</span>/<span id="exp-needed2">500</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="exp-bar" style="width:0%;"></div></div>
+          </div>
+
+          <!-- 星级 -->
+          <div class="stat-row">
+            <div class="stat-label"><span id="stars-label">Stars</span></div>
+            <div class="stat-value"><span id="stars-count">0</span>/5</div>
+            <div class="progress-bar"><div class="progress-fill gold" id="stars-bar" style="width:0%;"></div></div>
+          </div>
+
+          <!-- 自动战斗 -->
+          <div class="auto-fight-bar">
+            <span id="auto-label">⚔️ Auto Combat</span>
+            <span class="badge badge-success" id="auto-status">▶ Running</span>
+            <button class="btn btn-ghost" onclick="toggleAutoFight();" id="auto-btn">Pause</button>
+          </div>
+
+          <!-- 统计 -->
+          <div class="stat-mini">
+            <span>💀 <span id="kill-label">Kills</span>: <span class="text-red" id="kills2">0</span></span>
+            <span>⏱ <span id="playtime">0m 0s</span></span>
+          </div>
+
+          <!-- Boss 状态 -->
+          <div class="boss-area">
+            <div class="flex-between">
+              <span class="boss-label" id="boss-label">👹 Boss</span>
+              <span class="badge badge-warning" id="boss-status">⏳ Cooldown</span>
+            </div>
+            <div id="boss-active-area" style="display:none;">
+              <div class="flex-between boss-hp-row">
+                <span id="boss-name">Rioter</span>
+                <span><span id="boss-hp">0</span>/<span id="boss-maxhp">130</span></span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill boss" id="boss-bar" style="width:100%;"></div></div>
+            </div>
+            <div id="boss-cooldown-area">
+              <div class="boss-timer"><span id="boss-next-label">Next Boss</span>: <span id="boss-timer">600</span>s (~<span id="boss-minutes">10</span>min)</div>
+            </div>
+            <div id="boss-reward" style="display:none;" class="boss-reward">
+              🎁 +<span id="boss-gold">0</span>💰 +<span id="boss-exp">0</span>EXP
+              <button class="btn btn-gold btn-sm" onclick="claimBossRewardWithAd();">📺 <span id="boss-double-btn">Double Claim</span></button>
+            </div>
+          </div>
+
+          <!-- 离线收益 -->
+          <div id="offline-area" style="display:none;" class="offline-area">
+            <div class="flex-between">
+              <span id="offline-label">💤 Offline Earnings</span>
+              <span class="offline-time" id="offline-time">0h 0m</span>
+            </div>
+            <div class="offline-btns">
+              <button class="btn btn-ghost" onclick="claimOffline(1);" id="offline-claim-btn">Claim</button>
+              <button class="btn btn-gold" onclick="claimOfflineWithAd();" id="offline-double-btn">📺 Double</button>
+            </div>
+          </div>
+
+          <!-- 双倍 Buff -->
+          <div id="buff-area" style="display:none;" class="buff-area">
+            🔁 <span id="buff-label">Double Rewards</span>: <span id="buff-timer">0</span>s
+          </div>
+
+          <!-- 建筑产出汇总 -->
+          <div id="building-production-summary" style="font-size:0.8em; color:#888; margin-top:6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">
+            🏗️ Building: 0💰/s 0⛏️/s 0🌾/s
+          </div>
+
+          <!-- 士兵汇总 -->
+          <div id="soldier-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
+            🪖 Soldiers: 0/0 active | 🌾 0.00/s
+          </div>
+
+          <!-- 舰队汇总 -->
+          <div id="fleet-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
+            🚢 Fleet: 0/0 unlocked | ⚡ 0 CP
+          </div>
+
+          <!-- 科技汇总 -->
+          <div id="tech-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
+            🔬 Tech: 0 levels | ⚡ 0 TP
+          </div>
+
+          <!-- 装备汇总 -->
+          <div id="equipment-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
+            🗡️ Gear: 0 levels | ⚡ +0 CP
+          </div>
+
+          <!-- 每日任务汇总 -->
+          <div id="daily-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
+            📋 Daily: 0/0
+          </div>
+
+          <!-- 成就汇总 -->
+          <div id="achievement-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
+            🏆 Achievements: 0/0 (0%)
+          </div>
+
+          <!-- 事件状态 -->
+          <div id="event-status" style="font-size:0.8em; color:#888; margin-top:4px;">
+            ⚡ Event Ready
+          </div>
+
+        </div>
+
+        <!-- ====== 右列 ====== -->
+        <div class="glass-card">
+
+          <!-- 晋升考核 -->
+          <div class="promo-area">
+            <div class="promo-title" id="promo-label">⭐ Promotion Trial</div>
+
+            <div id="promotion-ready" style="display:none;">
+              <div class="promo-stars-full" id="stars-full">✅ ★★★★★ Ready to Promote!</div>
+
+              <div class="promo-buttons">
+                <button class="promo-btn" id="btn-normal-promote" onclick="handlePromote('normal');">
+                  <span class="promo-icon">⚔️</span>
+                  <span class="promo-name">Standard</span>
+                  <span class="promo-rate">50%</span>
+                  <span class="promo-cost" id="normal-cost">Cost: 2,000 EXP</span>
+                  <span class="promo-penalty">Fail: -50% EXP</span>
+                </button>
+
+                <button class="promo-btn" id="btn-gold-promote" onclick="handlePromote('gold');">
+                  <span class="promo-icon">💰</span>
+                  <span class="promo-name">Military Funds</span>
+                  <span class="promo-rate">70%</span>
+                  <span class="promo-cost" id="gold-cost">Cost: 1,000 💰</span>
+                  <span class="promo-penalty">Fail: Gold lost</span>
+                </button>
+
+                <button class="promo-btn promo-ad" id="btn-ad-promote" onclick="handlePromote('ad');">
+                  <span class="promo-icon">📺</span>
+                  <span class="promo-name">Recommendation</span>
+                  <span class="promo-rate">100%</span>
+                  <span class="promo-cost">Watch Ad</span>
+                  <span class="promo-penalty">Guaranteed</span>
+                </button>
+              </div>
+
+              <div class="promo-stats">
+                <span id="attempts-label">Attempts</span>: <span id="attempts">0</span> | <span id="success-label">Success</span>: <span id="successes">0</span>
+              </div>
+            </div>
+
+            <div id="promotion-not-ready" style="color:#888; font-size:0.9em; margin:6px 0;">
+              ★ <span id="promo-need">Collect 5 stars to promote</span> (<span id="stars-progress">0</span>/5)
+            </div>
+          </div>
+
+          <!-- 功能按钮（8个） -->
+          <div class="grid-3" style="grid-template-columns: repeat(4, 1fr);">
+            <button class="btn btn-ghost" id="btn-rank" onclick="showRankView();">🎖 Ranks</button>
+            <button class="btn btn-ghost" id="btn-building" onclick="showBuildingView();">🏗️ Buildings</button>
+            <button class="btn btn-ghost" id="btn-fleet" onclick="showFleetView();">🚢 Fleet</button>
+            <button class="btn btn-ghost" id="btn-tech" onclick="showTechView();">🔬 Tech</button>
+            <button class="btn btn-ghost" id="btn-soldier" onclick="showSoldierView();">🪖 Soldiers</button>
+            <button class="btn btn-ghost" id="btn-equip" onclick="showEquipmentView();">🗡️ Equipment</button>
+            <button class="btn btn-ghost" id="btn-daily" onclick="showDailyView();">📋 Daily</button>
+            <button class="btn btn-ghost" id="btn-achievement" onclick="showAchievementView();">🏆 Achievements</button>
+          </div>
+
+          <!-- 底部操作 -->
+          <div style="display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap;">
+            <button class="btn btn-ghost" id="btn-save" onclick="saveGame();">💾 Save</button>
+            <button class="btn btn-ghost" id="btn-load" onclick="loadGame();">📂 Load</button>
+            <button class="btn btn-ghost" id="btn-lang" onclick="switchLang(langCurrent==='zh'?'en':'zh');">🌐 English</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部 -->
+      <div style="text-align:center; color:#444; font-size:0.7em; margin-top:12px; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
+        Infinite Commander v1.0 · <span id="auto-bottom">ON</span>
+        &nbsp;|&nbsp; 👑 <span id="rank-bottom">Recruit</span>
+        &nbsp;|&nbsp; ⏱ <span id="playtime-bottom">0h 0m</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       视图占位
+       ============================================================ -->
+  <div id="view-rank" class="view" style="display:none;"></div>
+  <div id="view-building" class="view" style="display:none;"></div>
+  <div id="view-fleet" class="view" style="display:none;"></div>
+  <div id="view-tech" class="view" style="display:none;"></div>
+  <div id="view-soldier" class="view" style="display:none;"></div>
+  <div id="view-equipment" class="view" style="display:none;"></div>
+  <div id="view-daily" class="view" style="display:none;"></div>
+  <div id="view-achievement" class="view" style="display:none;"></div>
+
+  <!-- ============================================================
+       JavaScript 加载（按顺序）
+       ============================================================ -->
+
+  <!-- 核心层 -->
+  <script src="./js/core/config.js"></script>
+  <script src="./js/core/lang.js"></script>
+  <script src="./js/core/utils.js"></script>
+
+  <!-- 数据层 -->
+  <script src="./js/data/ranks.js"></script>
+  <script src="./js/data/player.js"></script>
+  <script src="./js/data/story.js"></script>
+
+  <!-- 系统层 -->
+  <script src="./js/systems/combat.js"></script>
+  <script src="./js/systems/boss.js"></script>
+  <script src="./js/systems/promote.js"></script>
+  <script src="./js/systems/building.js"></script>
+  <script src="./js/systems/soldier.js"></script>
+  <script src="./js/systems/tech.js"></script>
+  <script src="./js/systems/fleet.js"></script>
+  <script src="./js/systems/events.js"></script>
+  <script src="./js/systems/daily.js"></script>
+  <script src="./js/systems/achievements.js"></script>
+  <script src="./js/systems/equipment.js"></script>
+
+  <!-- 辅助层 -->
+  <script src="./js/helpers/security.js"></script>
+  <script src="./js/helpers/save.js"></script>
+  <script src="./js/helpers/offline.js"></script>
+  <script src="./js/helpers/ads.js"></script>
+<!-- ★★★★★ CrazyGames SDK 辅助（等开通后取消注释） ★★★★★ -->
+<!-- <script src="./js/helpers/crazygames_sdk.js"></script> -->
+<!-- <script src="./js/helpers/crazygames_leaderboard.js"></script> -->
+
+  <!-- UI层 -->
+  <script src="./js/ui/components.js"></script>
+  <script src="./js/ui/ui.js"></script>
+  <script src="./js/ui/views.js"></script>
+
+  <!-- 流程层 -->
+  <script src="./js/flow/tutorial.js"></script>
+  <script src="./js/flow/main.js"></script>
+
+  <!-- SDK -->
+  <script src="./js/sdk/crazygames.js"></script>
+
+</body>
+</html>
