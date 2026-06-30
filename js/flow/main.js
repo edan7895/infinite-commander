@@ -1,8 +1,8 @@
 // ============================================================
-// main.js — Game Entry, Main Loop, View Navigation (Part 8 + CrazyGames SDK v3)
+// main.js — Game Entry, Main Loop, View Navigation (Part 8)
 // ============================================================
 
-// ===== 1. View Navigation =====
+// ---------- View Navigation ----------
 function showView(viewId) {
   document.querySelectorAll('.view').forEach(function(v) {
     v.style.display = 'none';
@@ -11,35 +11,8 @@ function showView(viewId) {
   if (target) target.style.display = 'block';
 }
 
-// ===== 2. CrazyGames SDK v3 初始化 =====
-async function initCrazyGamesSDK() {
-  try {
-    // 检查 SDK 是否已加载
-    if (typeof window.CrazyGames === 'undefined' || !window.CrazyGames.SDK) {
-      console.warn('⚠️ CrazyGames SDK 未加载（可能不在 CrazyGames 平台运行）');
-      return false;
-    }
-
-    // v3 SDK 需要手动调用 init()
-    await window.CrazyGames.SDK.init();
-    console.log('✅ CrazyGames SDK v3 初始化成功');
-    console.log('📡 环境:', window.CrazyGames.SDK.environment);
-
-    // 如果环境是 'local'，提示开发者
-    if (window.CrazyGames.SDK.environment === 'local') {
-      console.log('📢 本地环境：广告将显示为覆盖层文本');
-    }
-
-    return true;
-  } catch (error) {
-    console.error('❌ CrazyGames SDK 初始化失败:', error);
-    console.log('📢 游戏将继续运行，但排行榜和广告功能可能受限');
-    return false;
-  }
-}
-
-// ===== 3. Start Game =====
-async function startGame() {
+// ---------- Start Game ----------
+function startGame() {
   if (!player) {
     initPlayer();
     if (typeof protectPlayer === 'function') {
@@ -47,24 +20,18 @@ async function startGame() {
     }
   }
 
-  // 加载存档
   loadGame();
 
-  // ★★★★★ 初始化 CrazyGames SDK v3 ★★★★★
-  await initCrazyGamesSDK();
-
-  // 开场故事
   currentStoryIndex = 0;
   showView('story');
   renderStory();
 
-  // 启动游戏循环
   if (typeof gameLoopInterval === 'undefined' || !gameLoopInterval) {
     gameLoopInterval = setInterval(gameLoop, 1000);
   }
 }
 
-// ===== 4. Story =====
+// ---------- Story ----------
 function renderStory() {
   const container = document.getElementById('story-text');
   if (!container) return;
@@ -97,46 +64,34 @@ function skipStory() {
   renderStory();
 }
 
-// ===== 5. Game Loop =====
+// ---------- Game Loop ----------
 let gameLoopInterval = null;
 
 function gameLoop() {
   if (!player) return;
 
-  // 建筑产出
   applyBuildingProduction();
-
-  // 士兵稻米消耗
   applySoldierConsumption();
 
-  // 自动战斗
   if (player.autoFight) {
     doCombat();
   }
 
-  // Boss 更新
   updateBoss();
-
-  // 检查自动晋升
   checkAutoPromote();
-
-  // 检查教程
   checkTutorial();
 
-  // 随机事件（仅当没有事件活跃时）
   if (!eventActive) {
     triggerRandomEvent();
   }
 
-  // 每日重置检查和成就检查
   checkDailyReset();
   checkAchievements();
 
-  // 更新 UI
   if (typeof updateUI === 'function') updateUI();
 }
 
-// ===== 6. Combat =====
+// ---------- Combat ----------
 function doCombat() {
   const p = player;
   const rank = getCurrentRank();
@@ -148,11 +103,9 @@ function doCombat() {
   let goldGain = Math.floor(rank.goldBase * 0.03) + 1;
   goldGain += Math.floor(p.stars * 0.3);
 
-  // 科技加成：AI
   const techMods = getTechModifiers();
   const aiBonus = 1 + techMods.aiBonus;
 
-  // 装备加成：引擎 + 核心
   const equipMods = getEquipmentModifiers();
   const efficiencyBonus = 1 + equipMods.efficiencyBonus;
   const allBonus = 1 + equipMods.allBonus;
@@ -162,7 +115,6 @@ function doCombat() {
   expGain = Math.floor(expGain * totalMultiplier);
   goldGain = Math.floor(goldGain * totalMultiplier);
 
-  // 双倍 Buff
   if (p.doubleBuff > 0) {
     expGain *= 2;
     goldGain *= 2;
@@ -175,14 +127,10 @@ function doCombat() {
   p.kills++;
   p.totalKills++;
 
-  // 更新每日任务进度
   updateDailyProgress('kill', 1);
   updateDailyProgress('gold', goldGain);
 
-  // 士兵死亡判定
   applySoldierDeath();
-
-  // 自动升星检查
   checkAutoStar();
 }
 
@@ -203,41 +151,36 @@ function checkAutoPromote() {
   if (p.stars < 5) return;
 }
 
-// ===== 7. Combat Power =====
+// ---------- Combat Power ----------
 function calcCombatPower() {
   const p = player;
   const rank = getCurrentRank();
   let cp = 10 + rank.id * 5 + p.stars * 3 + p.level * 2;
 
-  // 士兵战斗力
   const activeSoldiers = (p.soldiers || 0) - (p.wounded || 0);
   cp += activeSoldiers * CONFIG.SOLDIER.combatPowerPerSoldier;
 
-  // 舰队战斗力
   cp += getFleetCP();
 
-  // 科技加成
   const techMods = getTechModifiers();
   cp += techMods.cpBonus;
 
-  // 装备加成
   const equipMods = getEquipmentModifiers();
   cp += equipMods.cpBonus;
 
-  // 核科技全属性加成
   cp += cp * techMods.allBonus * 0.5;
 
   return Math.floor(cp);
 }
 
-// ===== 8. Toggle Auto Fight =====
+// ---------- Toggle Auto Fight ----------
 function toggleAutoFight() {
   if (!player) return;
   player.autoFight = !player.autoFight;
   if (typeof updateUI === 'function') updateUI();
 }
 
-// ===== 9. Handle Promote =====
+// ---------- Handle Promote ----------
 function handlePromote(type) {
   if (!player) return;
 
@@ -296,7 +239,7 @@ function handlePromote(type) {
   if (typeof updateUI === 'function') updateUI();
 }
 
-// ===== 10. Claim Offline =====
+// ---------- Claim Offline ----------
 function claimOffline(mult) {
   if (!player) return;
   const result = applyOfflineEarnings(mult);
@@ -319,8 +262,9 @@ function claimOfflineWithAd() {
   });
 }
 
-// ===== 11. Claim Boss Reward =====
-let lastBossReward = null;
+// ---------- Claim Boss Reward ----------
+// ★★★ 注意：不再用 var/let 重复声明，直接赋值给全局 ★★★
+lastBossReward = null;
 
 function claimBossRewardWithAd() {
   if (!lastBossReward) {
@@ -343,9 +287,9 @@ function claimBossRewardWithAd() {
   });
 }
 
-// ===== 12. Boss Update =====
-const originalUpdateBoss = updateBoss;
-updateBoss = function() {
+// ---------- Boss Update ----------
+// 覆盖 boss.js 中的 updateBoss 函数
+function updateBoss() {
   if (!player) return;
 
   const p = player;
@@ -377,7 +321,6 @@ updateBoss = function() {
       p.bossDefeated++;
       p.totalBossDefeated++;
 
-      // 更新每日任务
       updateDailyProgress('boss', 1);
 
       const rank = getCurrentRank();
@@ -399,9 +342,9 @@ updateBoss = function() {
       if (typeof updateUI === 'function') updateUI();
     }
   }
-};
+}
 
-// ===== 13. View Functions =====
+// ---------- View Functions ----------
 function showRankView() {
   if (typeof showRankViewFull === 'function') showRankViewFull();
   else showToast('🎖️ ' + t('rank') + ' view coming soon!', 2000);
@@ -442,14 +385,12 @@ function showAchievementView() {
   else showToast('🏆 ' + t('achievements') + ' view coming soon!', 2000);
 }
 
-// ===== 14. Initialize =====
+// ---------- Initialize ----------
 document.addEventListener('DOMContentLoaded', function() {
-  // 启用反调试
   if (typeof enableAntiDebug === 'function') {
     enableAntiDebug();
   }
 
-  // 初始化玩家
   if (!player) {
     initPlayer();
     if (typeof protectPlayer === 'function') {
@@ -457,23 +398,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 显示启动界面
   showView('start');
   updateStartScreenLang();
 
-  // 检查是否有存档
   const hasSave = localStorage.getItem('commander_save') ? true : false;
   const info = document.getElementById('save-info');
   if (info) {
     info.textContent = hasSave ? '📁 Save Loaded' : '📁 New Game';
   }
 
-  // CrazyGames SDK v3 会自动初始化，但我们也可以主动检查
-  // SDK 脚本已经在 index.html 中加载，会在页面加载时自动可用
-  if (typeof window.CrazyGames !== 'undefined' && window.CrazyGames.SDK) {
-    console.log('🎮 CrazyGames SDK v3 已加载，等待游戏启动时初始化...');
-  }
-
-  console.log('✅ Infinite Commander loaded! Part 8 + CrazyGames SDK v3 Ready');
-  console.log('🔒 Security active | 📱 ' + (window.innerWidth < 640 ? 'Mobile' : 'Desktop'));
+  console.log('✅ Infinite Commander loaded! Part 8');
 });
