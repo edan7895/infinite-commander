@@ -1,5 +1,5 @@
 // ============================================================
-// main.js — Game Entry, Main Loop, View Navigation (Part 12)
+// main.js — Game Entry, Main Loop, View Navigation (Part 14 - 智能跳过故事)
 // ============================================================
 
 // ---------- 游戏循环控制 ----------
@@ -42,8 +42,44 @@ function showView(viewId) {
   if (target) target.style.display = 'block';
 }
 
+// ---------- ★★★ 检测是否有游戏进度（用于决定是否跳过故事） ★★★ ----------
+function hasGameProgress() {
+  if (!player) return false;
+  
+  // 检查是否有任何进度数据
+  const hasProgress = 
+    player.rankId > 0 ||           // 有军阶
+    player.stars > 0 ||            // 有战星
+    player.totalKills > 0 ||       // 有击杀
+    player.totalGold > 1000 ||     // 有赚取金币
+    player.soldiers > 0 ||         // 有士兵
+    player.buildings.goldMine > 1 || // 有建筑升级
+    Object.keys(player.fleet || {}).length > 0 || // 有舰队
+    Object.keys(player.tech || {}).length > 0 ||  // 有科技
+    Object.keys(player.equipment || {}).length > 0 || // 有装备
+    player.achievements.length > 0 ||  // 有成就
+    player.prestigeCount > 0;      // 有转生记录
+  
+  return hasProgress;
+}
+
+// ---------- ★★★ 检测是否有任何存档（本地或云端） ★★★ ----------
+function hasAnySave() {
+  // 检查 localStorage
+  const hasLocalSave = localStorage.getItem('commander_save') !== null;
+  
+  // 如果有本地存档，返回 true
+  if (hasLocalSave) return true;
+  
+  // 如果有玩家数据且有进度，也视为有存档
+  if (player && hasGameProgress()) return true;
+  
+  return false;
+}
+
 // ---------- Start Game ----------
 async function startGame() {
+  // 初始化玩家
   if (!player) {
     initPlayer();
     if (typeof protectPlayer === 'function') {
@@ -51,8 +87,20 @@ async function startGame() {
     }
   }
 
+  // ===== Part 10: 加载存档 =====
   const hasSave = await loadGame();
 
+  // ===== ★★★ Part 14: 智能决定是否显示故事 ★★★ =====
+  // 条件1: 有存档 (hasSave === true)
+  // 条件2: 玩家已完成引导 (guideCompleted === true)
+  // 条件3: 玩家有任何游戏进度 (hasGameProgress() === true)
+  // 条件4: 有任何本地存档 (hasAnySave() === true)
+  const shouldSkipStory = hasSave || 
+                          (player && player.guideCompleted === true) || 
+                          (player && hasGameProgress()) ||
+                          hasAnySave();
+
+  // ===== 离线收益检查 =====
   if (player && player.offlineSeconds > 0) {
     setTimeout(function() {
       if (typeof checkAndShowOfflinePopup === 'function') {
@@ -61,14 +109,28 @@ async function startGame() {
     }, 500);
   }
 
+  // ===== 初始化 CrazyGames SDK =====
   if (typeof initCrazyGamesSDK === 'function') {
     await initCrazyGamesSDK();
   }
 
-  if (player.guideCompleted) {
+  // ===== ★★★ 根据条件决定跳转 ★★★ =====
+  if (shouldSkipStory) {
+    // ★★★ 有存档或有进度 → 直接进入主界面，跳过故事 ★★★
+    console.log('[Game] 检测到已有进度，跳过故事');
+    
+    // 如果引导未完成但有进度，标记为已完成
+    if (player && !player.guideCompleted && hasGameProgress()) {
+      player.guideCompleted = true;
+      if (typeof saveGame === 'function') {
+        saveGame();
+      }
+    }
+    
     showView('main');
     if (typeof updateUI === 'function') updateUI();
 
+    // 如果有离线收益，尝试显示弹窗
     if (player && player.offlineSeconds > 0) {
       setTimeout(function() {
         if (typeof checkAndShowOfflinePopup === 'function' && !window._offlinePopupOpen) {
@@ -86,9 +148,15 @@ async function startGame() {
       startAutoSave();
     }
 
+    if (typeof resetEventTimer === 'function') {
+      resetEventTimer();
+    }
+
     return;
   }
 
+  // ===== ★★★ 第一次玩：显示故事 + 新手引导 ★★★ =====
+  console.log('[Game] 首次启动，显示故事');
   currentStoryIndex = 0;
   showView('story');
   renderStory();
@@ -100,6 +168,10 @@ async function startGame() {
 
   if (typeof startAutoSave === 'function') {
     startAutoSave();
+  }
+
+  if (typeof resetEventTimer === 'function') {
+    resetEventTimer();
   }
 }
 
@@ -163,26 +235,34 @@ window.refreshAllUI = refreshAllUI;
 window.refreshMainUI = refreshMainUI;
 
 // ---------- Game Loop ----------
+let _eventTimer = 0;
+let _eventInterval = 30 + Math.floor(Math.random() * 90);
+
 function gameLoop() {
   if (_isGamePaused) return;
   if (!player) return;
 
+  // 升级队列
   if (typeof updateUpgradeQueues === 'function') {
     updateUpgradeQueues();
   }
 
+  // 建筑产出
   if (typeof applyBuildingProduction === 'function') {
     applyBuildingProduction();
   }
 
+  // 士兵消耗
   if (typeof applySoldierConsumption === 'function') {
     applySoldierConsumption();
   }
 
+  // 战斗
   if (player.autoFight) {
     doCombat();
   }
 
+  // Boss
   if (typeof updateBoss === 'function') {
     updateBoss();
   }
@@ -193,9 +273,15 @@ function gameLoop() {
     checkTutorial();
   }
 
+  // 随机事件
   if (typeof eventActive !== 'undefined' && !eventActive) {
-    if (typeof triggerRandomEvent === 'function') {
-      triggerRandomEvent();
+    _eventTimer++;
+    if (_eventTimer >= _eventInterval) {
+      if (typeof triggerRandomEvent === 'function') {
+        triggerRandomEvent();
+      }
+      _eventTimer = 0;
+      _eventInterval = 30 + Math.floor(Math.random() * 90);
     }
   }
 
@@ -221,7 +307,7 @@ function gameLoop() {
   }
 }
 
-// ---------- 更新离线收益UI ----------
+// ---------- 更新离线UI ----------
 function updateOfflineUI() {
   if (!player) return;
 
@@ -257,7 +343,6 @@ function doCombat() {
   const efficiencyBonus = 1 + equipMods.efficiencyBonus;
   const allBonus = 1 + equipMods.allBonus;
 
-  // ★★★ 转生加成 ★★★
   let prestigeBonus = 1;
   if (typeof getPrestigeBonus === 'function') {
     prestigeBonus = getPrestigeBonus();
@@ -606,6 +691,20 @@ function showPrestigeView() {
   else showToast('🔄 ' + t('prestige') + ' view coming soon!', 2000);
 }
 
+// ---------- 全局暴露：强制跳过故事（供调试用） ----------
+function forceSkipStory() {
+  if (player) {
+    player.guideCompleted = true;
+    if (typeof saveGame === 'function') {
+      saveGame();
+    }
+    showView('main');
+    if (typeof updateUI === 'function') updateUI();
+    showToast('⏭️ ' + (langCurrent === 'zh' ? '已跳过故事' : 'Story skipped'));
+  }
+}
+window.forceSkipStory = forceSkipStory;
+
 // ---------- Initialize ----------
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof enableAntiDebug === 'function') {
@@ -632,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupBeforeUnloadSave();
   }
 
-  console.log('✅ Infinite Commander loaded! Part 12 - 转生系统 + 离线封顶提示');
+  console.log('✅ Infinite Commander loaded! Part 14 - 智能跳过故事');
   console.log('🔒 Security active | 📱 ' + (window.innerWidth < 640 ? 'Mobile' : 'Desktop'));
   console.log('💾 自动存档已启动 (每30秒)');
 });

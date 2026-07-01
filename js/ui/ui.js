@@ -219,24 +219,26 @@ function updateUI() {
     }
   }
 
-  // ----- Event Status -----
-  const eventEl = document.getElementById('event-status');
-  if (eventEl) {
-    const isZh = langCurrent === 'zh';
-    if (eventActive) {
-      eventEl.innerHTML = '⚡ ' + (isZh ? '事件进行中' : 'Event Active');
-      eventEl.style.color = '#f5d742';
+// ----- Event Status（确保这部分代码存在） -----
+const eventEl = document.getElementById('event-status');
+if (eventEl) {
+  const isZh = langCurrent === 'zh';
+  if (eventActive) {
+    eventEl.innerHTML = '⚡ ' + (isZh ? '事件进行中' : 'Event Active');
+    eventEl.style.color = '#f5d742';
+  } else {
+    // 不显示倒计时，只显示就绪状态
+    const remaining = Math.max(0, _eventInterval - _eventTimer);
+    if (remaining > 0 && remaining < 300) {
+      // 只在接近触发时显示，但为了"真正的随机感"，不显示具体倒计时
+      eventEl.innerHTML = '⚡ ' + (isZh ? '事件就绪' : 'Event Ready');
+      eventEl.style.color = '#7bed9f';
     } else {
-      const remaining = Math.max(0, CONFIG.EVENTS.minInterval - (Date.now() - (player.lastEventTime || 0)) / 1000);
-      if (remaining > 0) {
-        eventEl.innerHTML = '⏳ ' + (isZh ? '下次事件' : 'Next Event') + ': ' + Math.floor(remaining) + 's';
-        eventEl.style.color = '#666';
-      } else {
-        eventEl.innerHTML = '⚡ ' + (isZh ? '事件就绪' : 'Event Ready');
-        eventEl.style.color = '#7bed9f';
-      }
+      eventEl.innerHTML = '⚡ ' + (isZh ? '事件就绪' : 'Event Ready');
+      eventEl.style.color = '#7bed9f';
     }
   }
+}
 
   // ----- Promotion -----
   if (p.stars >= 5) {

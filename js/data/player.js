@@ -1,5 +1,5 @@
 // ============================================================
-// player.js — Player Object (Part 12 - 添加转生数据)
+// player.js — Player Object (Part 14 - 完整数据)
 // ============================================================
 
 function createPlayer() {
@@ -92,10 +92,10 @@ function createPlayer() {
     // ---------- Login ----------
     loginDays: CONFIG.STARTING.loginDays || 0,
 
-    // ---------- 新手引导 ----------
+    // ---------- 新手引导 (Part 8) ----------
     guideCompleted: false,
 
-    // ===== ★★★ Part 12: 转生数据 ★★★ =====
+    // ===== Part 12: 转生数据 =====
     prestigeCount: CONFIG.STARTING.prestigeCount || 0,
     prestigeMedals: CONFIG.STARTING.prestigeMedals || 0,
     prestigeHistory: CONFIG.STARTING.prestigeHistory || []
@@ -175,3 +175,24 @@ function restorePlayerFromSave(data) {
   }
   return true;
 }
+
+// ---------- ★★★ Part 14: 检查是否有任何游戏进度 ★★★ ----------
+function hasGameProgress() {
+  if (!player) return false;
+  
+  const hasProgress = 
+    player.rankId > 0 ||
+    player.stars > 0 ||
+    player.totalKills > 0 ||
+    player.totalGold > 1000 ||
+    player.soldiers > 0 ||
+    player.buildings.goldMine > 1 ||
+    Object.keys(player.fleet || {}).length > 0 ||
+    Object.keys(player.tech || {}).length > 0 ||
+    Object.keys(player.equipment || {}).length > 0 ||
+    player.achievements.length > 0 ||
+    player.prestigeCount > 0;
+  
+  return hasProgress;
+}
+window.hasGameProgress = hasGameProgress;
