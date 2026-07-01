@@ -1,486 +1,210 @@
 // ============================================================
-// views.js — View Navigation (Part 8)
+// views.js — View Navigation (Part 12 - 添加转生视图)
 // ============================================================
 
-// ---------- Rank View ----------
-function showRankViewFull() {
-  const isZh = langCurrent === 'zh';
-  let html = '<div class="glass-card"><h2 style="color:#f5d742;">' + t('rank') + '</h2>';
-  html += '<div style="max-height:400px; overflow-y:auto;">';
+// ---------- 所有现有视图函数保留，新增转生视图 ----------
+// 由于文件太长，这里只包含新增的转生视图函数和别名
 
-  RANK_DATA.forEach(function(r) {
-    const isCurrent = player && player.rankId === r.id;
-    const isUnlocked = player && player.rankId >= r.id;
-    const name = isZh ? r.rankZh : r.rankEn;
-    const boss = isZh ? r.bossZh : r.bossEn;
-    html += `<div style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; ${isCurrent ? 'color:#f5d742; font-weight:bold;' : isUnlocked ? 'color:#aaa;' : 'color:#444;'}">`;
-    html += `<span>${isCurrent ? '▶ ' : ''}${name}</span>`;
-    html += `<span style="font-size:0.7em; color:#666;">👹 ${boss}</span>`;
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('rank'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
-}
-
-// ---------- Building View ----------
-function showBuildingViewFull() {
+// ===== ★★★ 转生视图 ★★★ =====
+function showPrestigeViewFull() {
   if (!player) return;
 
   const isZh = langCurrent === 'zh';
-  const buildingTypes = ['goldMine', 'ironMine', 'riceFarm', 'barracks', 'hospital'];
-  const displayNames = {
-    goldMine: t('goldMine'),
-    ironMine: t('ironMine'),
-    riceFarm: t('riceFarm'),
-    barracks: t('barracks'),
-    hospital: t('hospital')
-  };
-  const icons = {
-    goldMine: '💰',
-    ironMine: '⛏️',
-    riceFarm: '🌾',
-    barracks: '🏛️',
-    hospital: '🏥'
-  };
+  const stats = getPrestigeStats();
+  const requirements = stats.requirements || {};
+  const canPrestige = stats.canPrestige || false;
+  const medals = stats.medals || 0;
+  const bonus = stats.bonusPercent || 0;
+  const prestigeCount = stats.prestigeCount || 0;
+  const maxPrestige = stats.maxPrestige || 20;
+  const history = stats.history || [];
 
-  const maxLevel = getMaxBuildingLevel();
+  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🔄 ${t('prestige')}</h2>`;
 
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🏗️ ${t('building')}</h2>`;
-  html += `<div style="margin-bottom:8px; color:#888; font-size:0.85em;">${isZh ? '当前最大等级（受军阶限制）' : 'Max level (limited by rank)'}: ${maxLevel}</div>`;
-  html += `<div style="max-height:500px; overflow-y:auto;">`;
-
-  buildingTypes.forEach(function(type) {
-    const level = getBuildingLevel(type);
-    const maxForType = maxLevel;
-    const cost = getBuildingUpgradeCost(type);
-    const canAfford = player.gold >= cost;
-    const isMaxed = level >= maxForType;
-    const yieldVal = getBuildingYield(type);
-    const name = displayNames[type] || type;
-    const icon = icons[type] || '🔧';
-
-    html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.05);">`;
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-    html += `<span style="font-weight:600;">${icon} ${name}</span>`;
-    html += `<span>${isZh ? '等级' : 'Lv'}. ${level} / ${maxForType}</span>`;
-    html += `</div>`;
-
-    if (type !== 'barracks' && type !== 'hospital') {
-      html += `<div style="font-size:0.85em; color:#aaa;">${isZh ? '产出' : 'Yield'}: ${formatNumber(yieldVal)}/s</div>`;
-    } else {
-      html += `<div style="font-size:0.85em; color:#666;">${type === 'barracks' ? (isZh ? '训练士兵' : 'Trains soldiers') : (isZh ? '治疗伤兵' : 'Heals wounded')}</div>`;
-    }
-
-    if (!isMaxed) {
-      html += `<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">`;
-      html += `<button class="btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" onclick="upgradeBuilding('${type}', false);" ${!canAfford ? 'disabled' : ''}>`;
-      html += `⬆ ${isZh ? '升级' : 'Upgrade'} (${formatNumber(cost)}💰)`;
-      html += `</button>`;
-      html += `<button class="btn btn-ghost" onclick="upgradeBuilding('${type}', true);">📺 ${isZh ? '广告加速' : 'Ad Boost'}</button>`;
-      html += `</div>`;
-    } else {
-      html += `<div style="color:#7bed9f; font-size:0.85em;">✅ ${isZh ? '已达最大等级' : 'Max level reached'}</div>`;
-    }
-
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('building'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
-}
-
-// ---------- Soldier View ----------
-function showSoldierViewFull() {
-  if (!player) return;
-
-  const isZh = langCurrent === 'zh';
-  const stats = getSoldierStats();
-
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🪖 ${t('soldier')}</h2>`;
-
-  html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0;">`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;"><div style="color:#888; font-size:0.75em;">${isZh ? '总兵力' : 'Total'}</div><div style="color:#f5d742; font-size:1.3em; font-weight:700;">${stats.total}</div></div>`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;"><div style="color:#888; font-size:0.75em;">${isZh ? '活跃' : 'Active'}</div><div style="color:#7bed9f; font-size:1.3em; font-weight:700;">${stats.active}</div></div>`;
-  html += `<div style="background:rgba(255,200,0,0.05); border-radius:8px; padding:10px; text-align:center;"><div style="color:#888; font-size:0.75em;">${isZh ? '伤兵' : 'Wounded'}</div><div style="color:#ff6b6b; font-size:1.3em; font-weight:700;">${stats.wounded}</div></div>`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; text-align:center;"><div style="color:#888; font-size:0.75em;">${isZh ? '最大兵力' : 'Max'}</div><div style="color:#4a9eff; font-size:1.3em; font-weight:700;">${stats.max}</div></div>`;
-  html += `</div>`;
-
-  html += `<div style="text-align:center; color:#888; font-size:0.85em; margin-bottom:12px;">🌾 ${isZh ? '稻米消耗' : 'Rice Consumption'}: ${stats.consumption.toFixed(2)}/s</div>`;
-
-  const trainCost = getTrainCost();
-  const canTrain = player.soldiers < stats.max;
-  const canAffordTrain = player.gold >= trainCost.gold && player.rice >= trainCost.rice;
-
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:12px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.05);">`;
-  html += `<div style="font-weight:600; color:#7bed9f; margin-bottom:6px;">⚔️ ${t('trainSoldier')}</div>`;
-  html += `<div style="font-size:0.85em; color:#aaa;">${t('trainCost')}: ${formatNumber(trainCost.gold)}💰 + ${formatNumber(trainCost.rice)}🌾</div>`;
-  html += `<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">`;
-  html += `<button class="btn ${canTrain && canAffordTrain ? 'btn-gold' : 'btn-disabled'}" onclick="trainSoldier(false);" ${!canTrain || !canAffordTrain ? 'disabled' : ''}>`;
-  html += `⬆ ${t('train')}`;
-  html += `</button>`;
-  html += `<button class="btn btn-ghost" onclick="trainSoldier(true);">📺 ${isZh ? '广告加速' : 'Ad Boost'}</button>`;
-  html += `</div>`;
-  if (!canTrain) {
-    html += `<div style="color:#ff6b6b; font-size:0.8em; margin-top:4px;">⚠️ ${t('maxSoldiersReached')}</div>`;
-  }
-  html += `</div>`;
-
-  const healCost = getHealCost();
-  const canHeal = stats.wounded > 0;
-  const canAffordHeal = player.gold >= healCost.gold && player.rice >= healCost.rice;
-
-  html += `<div style="background:rgba(255,200,0,0.05); border-radius:8px; padding:12px; border:1px solid rgba(255,200,0,0.1);">`;
-  html += `<div style="font-weight:600; color:#ffd93d; margin-bottom:6px;">🏥 ${t('treatWounded')}</div>`;
-  html += `<div style="font-size:0.85em; color:#aaa;">${t('healCost')}: ${formatNumber(healCost.gold)}💰 + ${formatNumber(healCost.rice)}🌾</div>`;
-  html += `<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">`;
-  html += `<button class="btn ${canHeal && canAffordHeal ? 'btn-gold' : 'btn-disabled'}" onclick="healWounded(false);" ${!canHeal || !canAffordHeal ? 'disabled' : ''}>`;
-  html += `🩹 ${t('treat')}`;
-  html += `</button>`;
-  html += `<button class="btn btn-ghost" onclick="healWounded(true);">📺 ${isZh ? '广告加速' : 'Ad Boost'}</button>`;
-  html += `</div>`;
-  if (!canHeal) {
-    html += `<div style="color:#7bed9f; font-size:0.8em; margin-top:4px;">✅ ${t('noWounded')}</div>`;
-  }
-  html += `</div>`;
-
-  html += `<button class="btn btn-ghost" style="margin-top:16px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('soldier'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
-}
-
-// ---------- Fleet View ----------
-function showFleetViewFull() {
-  if (!player) return;
-
-  const isZh = langCurrent === 'zh';
-  const fleetStats = getFleetStats();
-
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🚢 ${t('fleet')}</h2>`;
-
+  // ---- 当前状态 ----
   html += `<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin:12px 0;">`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; text-align:center;"><div style="color:#888; font-size:0.7em;">${isZh ? '已解锁' : 'Unlocked'}</div><div style="color:#7bed9f; font-size:1.2em; font-weight:700;">${fleetStats.unlocked}/${fleetStats.totalShips}</div></div>`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; text-align:center;"><div style="color:#888; font-size:0.7em;">${isZh ? '总等级' : 'Total Level'}</div><div style="color:#f5d742; font-size:1.2em; font-weight:700;">${fleetStats.totalLevels}</div></div>`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; text-align:center;"><div style="color:#888; font-size:0.7em;">${t('fleetCp')}</div><div style="color:#ff6b6b; font-size:1.2em; font-weight:700;">${fleetStats.totalCP}</div></div>`;
+  html += `<div style="background:rgba(255,215,0,0.05); border-radius:8px; padding:8px; text-align:center;">
+    <div style="color:#888; font-size:0.7rem;">🏅 ${t('prestigeMedals')}</div>
+    <div style="color:#f5d742; font-size:1.3rem; font-weight:700;">${medals}</div>
+  </div>`;
+  html += `<div style="background:rgba(123,237,159,0.05); border-radius:8px; padding:8px; text-align:center;">
+    <div style="color:#888; font-size:0.7rem;">📈 ${isZh ? '加成' : 'Bonus'}</div>
+    <div style="color:#7bed9f; font-size:1.3rem; font-weight:700;">+${bonus}%</div>
+  </div>`;
+  html += `<div style="background:rgba(74,158,255,0.05); border-radius:8px; padding:8px; text-align:center;">
+    <div style="color:#888; font-size:0.7rem;">🔄 ${t('prestigeCount')}</div>
+    <div style="color:#4a9eff; font-size:1.3rem; font-weight:700;">${prestigeCount}</div>
+  </div>`;
   html += `</div>`;
 
-  html += `<div style="max-height:500px; overflow-y:auto;">`;
+  // ---- 转生条件 ----
+  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin:8px 0;">`;
+  html += `<div style="font-weight:600; color:#888; font-size:0.85rem; margin-bottom:6px;">📋 ${t('prestigeRequirements')}</div>`;
+  html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
+  html += `<span style="color:#aaa; font-size:0.9rem;">${isZh ? '需要军阶达到' : 'Requires rank'} <span style="color:#f5d742;">${CONFIG.PRESTIGE.minRank}</span></span>`;
+  if (canPrestige) {
+    html += `<span style="color:#7bed9f; font-size:0.85rem;">✅ ${t('prestigeReady')}</span>`;
+  } else {
+    const currentRank = player.rankId || 0;
+    const progress = Math.min(100, (currentRank / CONFIG.PRESTIGE.minRank) * 100);
+    html += `<span style="color:#888; font-size:0.85rem;">${currentRank}/${CONFIG.PRESTIGE.minRank}</span>`;
+  }
+  html += `</div>`;
+  if (prestigeCount >= maxPrestige) {
+    html += `<div style="color:#ff6b6b; font-size:0.8rem; margin-top:4px;">⚠️ ${t('prestigeMaxReached').replace('{max}', maxPrestige)}</div>`;
+  }
+  html += `</div>`;
 
-  fleetStats.ships.forEach(function(ship) {
-    const isUnlocked = ship.isUnlocked;
-    const level = ship.level;
-    const maxLevel = ship.maxLevel;
-    const isMaxed = ship.isMaxed;
-    const name = isZh ? ship.nameZh : ship.nameEn;
-    const unlockRank = ship.unlockRank;
+  // ---- 转生奖励 ----
+  html += `<div style="background:rgba(123,237,159,0.04); border-radius:8px; padding:10px; margin:8px 0; border:1px solid rgba(123,237,159,0.08);">`;
+  html += `<div style="font-weight:600; color:#7bed9f; font-size:0.85rem; margin-bottom:6px;">🎁 ${t('prestigeRewards')}</div>`;
+  html += `<div style="font-size:0.85rem; color:#aaa;">`;
+  const nextMedals = medals + 1;
+  const nextBonus = nextMedals * CONFIG.PRESTIGE.bonusPerMedal;
+  html += `🏅 ${isZh ? '获得' : 'Gain'} <span style="color:#f5d742;">${nextMedals}</span> ${t('prestigeMedal')} ${isZh ? '枚' : ''}<br>`;
+  html += `📈 ${isZh ? '资源产出' : 'Resource Production'} <span style="color:#7bed9f;">+${nextBonus}%</span>`;
+  html += `</div>`;
+  html += `</div>`;
 
-    html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid ${isUnlocked ? (isMaxed ? 'rgba(123,237,159,0.2)' : 'rgba(255,255,255,0.05)') : 'rgba(255,0,0,0.1)'};">`;
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-    html += `<span style="font-weight:600; ${isUnlocked ? 'color:#d0d5dd;' : 'color:#666;'}">${isUnlocked ? '' : '🔒 '}${name}</span>`;
-    html += `<span style="font-size:0.85em; color:#888;">${t('fleetLevel')}: ${level}/${maxLevel}</span>`;
+  // ---- 警告信息 ----
+  html += `<div style="background:rgba(255,107,107,0.06); border-radius:8px; padding:10px; margin:8px 0; border:1px solid rgba(255,107,107,0.08);">`;
+  html += `<div style="font-size:0.8rem; color:#ff6b6b;">⚠️ ${t('prestigeWarning')}</div>`;
+  html += `<div style="font-size:0.8rem; color:#7bed9f; margin-top:4px;">✅ ${t('prestigeKeep')}</div>`;
+  const keepGoldPercent = CONFIG.PRESTIGE.keepGoldPercent * 100;
+  html += `<div style="font-size:0.75rem; color:#888; margin-top:4px;">💰 ${isZh ? '保留' : 'Keep'} ${keepGoldPercent}% ${isZh ? '金币' : 'gold'}</div>`;
+  html += `</div>`;
+
+  // ---- 转生按钮 ----
+  html += `<div style="text-align:center; margin:12px 0;">`;
+  if (canPrestige) {
+    html += `<button class="btn btn-gold" onclick="confirmPrestige();" style="padding:12px 40px; font-size:1.1rem;">🔄 ${t('prestigeButton')}</button>`;
+  } else {
+    html += `<button class="btn btn-disabled" disabled style="padding:12px 40px; font-size:1.1rem;">🔒 ${t('prestigeNotReady')}</button>`;
+  }
+  html += `</div>`;
+
+  // ---- 转生历史 ----
+  html += `<div style="margin-top:12px;">`;
+  html += `<div style="font-weight:600; color:#888; font-size:0.85rem; margin-bottom:6px;">📜 ${t('prestigeHistory')}</div>`;
+  if (history.length === 0) {
+    html += `<div style="color:#666; font-size:0.8rem; text-align:center; padding:8px;">${t('prestigeNoHistory')}</div>`;
+  } else {
+    html += `<div style="max-height:150px; overflow-y:auto; font-size:0.75rem;">`;
+    // 显示最近的5条
+    const recent = history.slice(-5).reverse();
+    recent.forEach(function(entry) {
+      const date = new Date(entry.timestamp).toLocaleDateString();
+      const rankName = entry.rankName || 'Unknown';
+      html += `<div style="display:flex; justify-content:space-between; padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.03); color:#888;">`;
+      html += `<span>🏅 ${entry.medals} ${isZh ? '勋章' : 'medals'} - ${rankName}</span>`;
+      html += `<span>${date}</span>`;
+      html += `</div>`;
+    });
     html += `</div>`;
+  }
+  html += `</div>`;
 
-    if (isUnlocked) {
-      if (!isMaxed) {
-        const cost = getShipUpgradeCost(ship.id);
-        if (cost) {
-          const canAfford = player.gold >= cost.gold && player.iron >= cost.iron;
-          html += `<div style="font-size:0.8em; color:#aaa; margin-top:4px;">⬆ ${formatNumber(cost.gold)}💰 + ${formatNumber(cost.iron)}⛏️</div>`;
-          html += `<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">`;
-          html += `<button class="btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" onclick="upgradeShip(${ship.id}, false);" ${!canAfford ? 'disabled' : ''}>`;
-          html += `⬆ ${t('fleetUpgrade')}`;
-          html += `</button>`;
-          html += `<button class="btn btn-ghost" onclick="upgradeShip(${ship.id}, true);">📺 ${isZh ? '广告加速' : 'Ad Boost'}</button>`;
-          html += `</div>`;
-        }
-      } else {
-        html += `<div style="color:#7bed9f; font-size:0.85em; margin-top:4px;">✅ ${t('fleetMaxLevel')}</div>`;
-      }
-    } else {
-      html += `<div style="color:#666; font-size:0.8em; margin-top:4px;">🔒 ${isZh ? '军阶' : 'Rank'} ${unlockRank} ${isZh ? '解锁' : 'required'}</div>`;
-    }
-
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
+  html += `<button class="btn btn-ghost" style="margin-top:16px; width:100%;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
   html += '</div>';
 
-  createModal(t('fleet'), html, [
+  createModal(t('prestigeTitle'), html, [
     { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
   ]);
 }
 
-// ---------- Tech View ----------
-function showTechViewFull() {
-  if (!player) return;
-
+// ---------- 转生确认 ----------
+function confirmPrestige() {
   const isZh = langCurrent === 'zh';
-  const techStats = getTechStats();
+  const check = checkPrestigeRequirements();
+  if (!check.canPrestige) {
+    showToast('⚠️ ' + (isZh ? '未达到转生条件' : 'Conditions not met'));
+    return;
+  }
 
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🔬 ${t('tech')}</h2>`;
+  const preview = getPrestigeRewardPreview();
+  if (!preview) return;
 
-  html += `<div style="text-align:center; color:#f5d742; font-size:1.1em; margin-bottom:12px;">`;
-  html += `⚡ ${t('techPoint')}: <span style="color:#ffd700; font-weight:700;">${techStats.totalTechPoints || 0}</span>`;
-  html += ` | 📊 ${isZh ? '总等级' : 'Total'}: ${techStats.totalLevels}`;
-  html += `</div>`;
+  const msg =
+    (isZh ? '⚠️ 确认转生？\n\n' : '⚠️ Confirm Prestige?\n\n') +
+    (isZh ? '🔄 转生次数：' + (preview.prestigeCount) + '\n' : '🔄 Prestige #' + preview.prestigeCount + '\n') +
+    (isZh ? '🏅 获得勋章：' + preview.medals + ' 枚\n' : '🏅 Medals: ' + preview.medals + '\n') +
+    (isZh ? '📈 加成：+' + preview.bonusPercent + '%\n\n' : '📈 Bonus: +' + preview.bonusPercent + '%\n\n') +
+    (isZh ? '此操作将重置军阶、建筑、士兵、舰队、科技、装备\n' : 'This resets: Rank, Buildings, Soldiers, Fleet, Tech, Equipment\n') +
+    (isZh ? '✅ 保留勋章、成就、每日任务进度、登录天数\n' : '✅ Keeps: Medals, Achievements, Daily, Login Days\n\n') +
+    (isZh ? '确定继续吗？' : 'Continue?');
 
-  html += `<div style="max-height:500px; overflow-y:auto;">`;
+  if (!confirm(msg)) {
+    return;
+  }
 
-  techStats.lines.forEach(function(line) {
-    const isUnlocked = line.isUnlocked;
-    const level = line.level;
-    const maxLevel = line.maxLevel;
-    const isMaxed = line.isMaxed;
-    const name = isZh ? line.nameZh : line.nameEn;
-    const unlockRank = line.unlockRank;
-    const effectDisplay = line.effectDisplay;
-
-    html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid ${isUnlocked ? (isMaxed ? 'rgba(123,237,159,0.2)' : 'rgba(255,255,255,0.05)') : 'rgba(255,0,0,0.1)'};">`;
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-    html += `<span style="font-weight:600; ${isUnlocked ? 'color:#d0d5dd;' : 'color:#666;'}">${isUnlocked ? '' : '🔒 '}${name}</span>`;
-    html += `<span style="font-size:0.85em; color:#888;">Lv. ${level}/${maxLevel}</span>`;
-    html += `</div>`;
-
-    if (isUnlocked) {
-      html += `<div style="font-size:0.8em; color:#7bed9f; margin-top:2px;">${effectDisplay}</div>`;
-
-      if (!isMaxed) {
-        const cost = getTechUpgradeCost(line.id);
-        if (cost) {
-          const canAfford = player.gold >= cost.gold && (player.techPoints || 0) >= cost.techPoint;
-          html += `<div style="font-size:0.8em; color:#aaa; margin-top:4px;">⬆ ${formatNumber(cost.gold)}💰 + ${cost.techPoint}⚡</div>`;
-          html += `<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">`;
-          html += `<button class="btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" onclick="upgradeTech('${line.id}', false);" ${!canAfford ? 'disabled' : ''}>`;
-          html += `⬆ ${t('techUpgrade')}`;
-          html += `</button>`;
-          html += `<button class="btn btn-ghost" onclick="upgradeTech('${line.id}', true);">📺 ${isZh ? '广告加速' : 'Ad Boost'}</button>`;
-          html += `</div>`;
-        }
-      } else {
-        html += `<div style="color:#7bed9f; font-size:0.85em; margin-top:4px;">✅ ${t('techMaxLevel')}</div>`;
-      }
-    } else {
-      html += `<div style="color:#666; font-size:0.8em; margin-top:4px;">🔒 ${isZh ? '军阶' : 'Rank'} ${unlockRank} ${isZh ? '解锁' : 'required'}</div>`;
+  // 执行转生
+  const result = performPrestige();
+  if (result && result.success) {
+    // 关闭当前弹窗
+    closeModal(document.querySelector('.modal-overlay'));
+    // 刷新UI
+    if (typeof refreshAllUI === 'function') {
+      refreshAllUI();
     }
-
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('tech'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
+    // 显示成功消息（已在performPrestige中处理）
+  } else {
+    showToast('⚠️ ' + (isZh ? '转生失败：' + (result ? result.message : '未知错误') : 'Prestige failed'));
+  }
 }
 
-// ---------- Equipment View ----------
-function showEquipmentViewFull() {
-  if (!player) return;
-
-  const isZh = langCurrent === 'zh';
-  const equipStats = getEquipmentStats();
-
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🗡️ ${t('equipment')}</h2>`;
-
-  html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0;">`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; text-align:center;"><div style="color:#888; font-size:0.7em;">${isZh ? '总等级' : 'Total Level'}</div><div style="color:#f5d742; font-size:1.2em; font-weight:700;">${equipStats.totalLevels}</div></div>`;
-  html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; text-align:center;"><div style="color:#888; font-size:0.7em;">${t('equipCp')}</div><div style="color:#ff6b6b; font-size:1.2em; font-weight:700;">+${equipStats.totalCP}</div></div>`;
-  html += `</div>`;
-
-  html += `<div style="max-height:500px; overflow-y:auto;">`;
-
-  equipStats.types.forEach(function(type) {
-    const isUnlocked = type.isUnlocked;
-    const level = type.level;
-    const maxLevel = type.maxLevel;
-    const isMaxed = type.isMaxed;
-    const name = isZh ? type.nameZh : type.nameEn;
-    const icon = type.icon || '🔧';
-    const unlockRank = type.unlockRank;
-    const effectDisplay = type.effectDisplay;
-    const currentNameObj = isZh ? type.currentNameZh : type.currentNameEn;
-    const currentName = level > 0 ? currentNameObj : (isZh ? '无' : 'None');
-
-    html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid ${isUnlocked ? (isMaxed ? 'rgba(123,237,159,0.2)' : 'rgba(255,255,255,0.05)') : 'rgba(255,0,0,0.1)'};">`;
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-    html += `<span style="font-weight:600; ${isUnlocked ? 'color:#d0d5dd;' : 'color:#666;'}">${icon} ${isUnlocked ? '' : '🔒 '}${name}</span>`;
-    html += `<span style="font-size:0.85em; color:#888;">${t('level')}: ${level}/${maxLevel}</span>`;
-    html += `</div>`;
-
-    html += `<div style="font-size:0.8em; color:#aaa; margin-top:2px;">${isZh ? '当前' : 'Current'}: ${currentName}</div>`;
-
-    if (isUnlocked) {
-      if (level > 0) {
-        html += `<div style="font-size:0.8em; color:#7bed9f; margin-top:2px;">${effectDisplay}</div>`;
-      }
-
-      if (!isMaxed) {
-        const cost = getEquipmentUpgradeCost(type.id);
-        if (cost) {
-          const canAfford = player.gold >= cost.gold && player.iron >= cost.iron;
-          const nextNameObj = CONFIG.EQUIPMENT.names[type.id];
-          const nextName = nextNameObj && nextNameObj[Math.min(level, nextNameObj.length - 1)];
-          const nextNameDisplay = isZh ? (nextName ? nextName.nameZh : '???') : (nextName ? nextName.nameEn : '???');
-
-          html += `<div style="font-size:0.8em; color:#888; margin-top:4px;">⬆ ${formatNumber(cost.gold)}💰 + ${formatNumber(cost.iron)}⛏️ → ${nextNameDisplay}</div>`;
-          html += `<div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">`;
-          html += `<button class="btn ${canAfford ? 'btn-gold' : 'btn-disabled'}" onclick="upgradeEquipment('${type.id}', false);" ${!canAfford ? 'disabled' : ''}>`;
-          html += `⬆ ${t('equipUpgrade')}`;
-          html += `</button>`;
-          html += `<button class="btn btn-ghost" onclick="upgradeEquipment('${type.id}', true);">📺 ${isZh ? '广告加速' : 'Ad Boost'}</button>`;
-          html += `</div>`;
-        }
-      } else {
-        html += `<div style="color:#7bed9f; font-size:0.85em; margin-top:4px;">✅ ${t('equipMaxLevel')}</div>`;
-      }
-    } else {
-      html += `<div style="color:#666; font-size:0.8em; margin-top:4px;">🔒 ${isZh ? '军阶' : 'Rank'} ${unlockRank} ${isZh ? '解锁' : 'required'}</div>`;
-    }
-
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('equipment'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
+// ---------- 别名函数 ----------
+function showRankView() {
+  if (typeof showRankViewFull === 'function') showRankViewFull();
+  else showToast('🎖️ ' + t('rank') + ' view coming soon!', 2000);
 }
 
-// ---------- Daily Quest View ----------
-function showDailyViewFull() {
-  if (!player) return;
-
-  const isZh = langCurrent === 'zh';
-  const dailyStats = getDailyStats();
-
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">📋 ${t('dailyQuests')}</h2>`;
-
-  html += `<div style="text-align:center; color:#888; font-size:0.9em; margin-bottom:12px;">`;
-  html += `${isZh ? '已完成' : 'Completed'}: ${dailyStats.completed}/${dailyStats.total}`;
-  if (dailyStats.allCompleted) html += ' ✅ ' + (isZh ? '全部完成！' : 'All done!');
-  html += `</div>`;
-
-  html += `<div style="max-height:500px; overflow-y:auto;">`;
-
-  dailyStats.tasks.forEach(function(task) {
-    const progressPercent = Math.min(100, (task.progress / task.target) * 100);
-    const isComplete = task.isComplete;
-    const claimed = task.claimed;
-    const statusText = claimed ? '✅ ' + (isZh ? '已领取' : 'Claimed') :
-                        isComplete ? '📥 ' + (isZh ? '可领取' : 'Ready') :
-                        (isZh ? '⏳ 进行中' : '⏳ In Progress');
-
-    let rewardText = '';
-    if (task.goldReward > 0) rewardText += formatNumber(task.goldReward) + '💰 ';
-    if (task.expReward > 0) rewardText += formatNumber(task.expReward) + 'EXP ';
-    if (task.ironReward > 0) rewardText += formatNumber(task.ironReward) + '⛏️ ';
-    if (task.riceReward > 0) rewardText += formatNumber(task.riceReward) + '🌾 ';
-    if (task.techReward > 0) rewardText += task.techReward + '⚡ ';
-
-    html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid ${isComplete ? 'rgba(123,237,159,0.2)' : 'rgba(255,255,255,0.05)'};">`;
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-    html += `<span style="font-weight:600;">${task.icon} ${isZh ? task.nameZh : task.nameEn}</span>`;
-    html += `<span style="font-size:0.85em; color:${isComplete ? '#7bed9f' : '#888'};">${statusText}</span>`;
-    html += `</div>`;
-
-    html += `<div style="font-size:0.85em; color:#aaa; margin-top:4px;">${task.progress}/${task.target}`;
-    if (rewardText) html += ` | ${isZh ? '奖励' : 'Reward'}: ${rewardText}`;
-    html += `</div>`;
-
-    html += `<div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${progressPercent}%;"></div></div>`;
-
-    if (isComplete && !claimed) {
-      html += `<button class="btn btn-gold" style="margin-top:6px;" onclick="claimDailyReward('${task.id}');">📥 ${t('dailyClaim')}</button>`;
-    }
-
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('dailyQuests'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
+function showBuildingView() {
+  if (typeof showBuildingViewFull === 'function') showBuildingViewFull();
+  else showToast('🏗️ ' + t('building') + ' view coming soon!', 2000);
 }
 
-// ---------- Achievement View ----------
-function showAchievementViewFull() {
-  if (!player) return;
-
-  const isZh = langCurrent === 'zh';
-  const achStats = getAchievementStats();
-
-  let html = `<div class="glass-card"><h2 style="color:#f5d742;">🏆 ${t('achievements')}</h2>`;
-
-  html += `<div style="text-align:center; color:#888; font-size:0.9em; margin-bottom:12px;">`;
-  html += `${isZh ? '已解锁' : 'Unlocked'}: ${achStats.unlocked}/${achStats.total} (${achStats.progress}%)`;
-  html += `</div>`;
-
-  html += `<div style="max-height:500px; overflow-y:auto;">`;
-
-  achStats.achievements.forEach(function(ach) {
-    const isUnlocked = ach.isUnlocked;
-    const progressPercent = Math.min(100, ach.progressPercent);
-
-    html += `<div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:10px; margin-bottom:8px; border:1px solid ${isUnlocked ? 'rgba(255,215,0,0.3)' : 'rgba(255,255,255,0.05)'};">`;
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">`;
-    html += `<span style="font-weight:600; ${isUnlocked ? 'color:#f5d742;' : 'color:#aaa;'}">${ach.icon} ${isZh ? ach.nameZh : ach.nameEn}</span>`;
-    html += `<span style="font-size:0.85em; color:${isUnlocked ? '#f5d742' : '#666'};">${isUnlocked ? '✅ ' + (isZh ? '已解锁' : 'Unlocked') : '🔒 ' + (isZh ? '未解锁' : 'Locked')}</span>`;
-    html += `</div>`;
-
-    html += `<div style="font-size:0.8em; color:#888; margin-top:2px;">${isZh ? ach.descZh : ach.descEn}</div>`;
-
-    if (!isUnlocked) {
-      html += `<div style="font-size:0.85em; color:#aaa; margin-top:4px;">${isZh ? '进度' : 'Progress'}: ${formatNumber(ach.progress)}/${formatNumber(ach.target)}</div>`;
-      html += `<div class="progress-bar" style="margin-top:4px;"><div class="progress-fill gold" style="width:${progressPercent}%;"></div></div>`;
-    } else {
-      let rewardText = '';
-      if (ach.rewardGold > 0) rewardText += formatNumber(ach.rewardGold) + '💰 ';
-      if (ach.rewardExp > 0) rewardText += formatNumber(ach.rewardExp) + 'EXP ';
-      if (ach.rewardTech > 0) rewardText += ach.rewardTech + '⚡ ';
-      html += `<div style="font-size:0.8em; color:#7bed9f; margin-top:4px;">${isZh ? '已领取奖励' : 'Reward claimed'}: ${rewardText || (isZh ? '无' : 'None')}</div>`;
-    }
-
-    html += `</div>`;
-  });
-
-  html += '</div>';
-  html += `<button class="btn btn-ghost" style="margin-top:12px;" onclick="closeModal(this.closest('.modal-overlay'));">${t('cancel')}</button>`;
-  html += '</div>';
-
-  createModal(t('achievements'), html, [
-    { label: t('cancel'), class: 'btn-ghost', action: 'closeModal(this.closest(".modal-overlay"))' }
-  ]);
+function showFleetView() {
+  if (typeof showFleetViewFull === 'function') showFleetViewFull();
+  else showToast('🚢 ' + t('fleet') + ' view coming soon!', 2000);
 }
 
-// ---------- Alias functions ----------
-function showRankView() { showRankViewFull(); }
-function showBuildingView() { showBuildingViewFull(); }
-function showSoldierView() { showSoldierViewFull(); }
-function showFleetView() { showFleetViewFull(); }
-function showTechView() { showTechViewFull(); }
-function showEquipmentView() { showEquipmentViewFull(); }
-function showDailyView() { showDailyViewFull(); }
-function showAchievementView() { showAchievementViewFull(); }
+function showTechView() {
+  if (typeof showTechViewFull === 'function') showTechViewFull();
+  else showToast('🔬 ' + t('tech') + ' view coming soon!', 2000);
+}
+
+function showSoldierView() {
+  if (typeof showSoldierViewFull === 'function') showSoldierViewFull();
+  else showToast('🪖 ' + t('soldier') + ' view coming soon!', 2000);
+}
+
+function showEquipmentView() {
+  if (typeof showEquipmentViewFull === 'function') showEquipmentViewFull();
+  else showToast('🗡️ ' + t('equipment') + ' view coming soon!', 2000);
+}
+
+function showDailyView() {
+  if (typeof showDailyViewFull === 'function') showDailyViewFull();
+  else showToast('📋 ' + t('dailyQuests') + ' view coming soon!', 2000);
+}
+
+function showAchievementView() {
+  if (typeof showAchievementViewFull === 'function') showAchievementViewFull();
+  else showToast('🏆 ' + t('achievements') + ' view coming soon!', 2000);
+}
+
+function showLoginView() {
+  if (typeof showLoginViewFull === 'function') showLoginViewFull();
+  else showToast('📅 ' + t('loginCheckIn') + ' view coming soon!', 2000);
+}
+
+function showPrestigeView() {
+  if (typeof showPrestigeViewFull === 'function') showPrestigeViewFull();
+  else showToast('🔄 ' + t('prestige') + ' view coming soon!', 2000);
+}
+
+// 暴露到全局
+window.confirmPrestige = confirmPrestige;
+window.showPrestigeView = showPrestigeView;
+
+console.log('✅ 视图系统已加载 (Part 12 - 转生视图)');

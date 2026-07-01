@@ -1,5 +1,5 @@
 // ============================================================
-// equipment.js — Equipment System (6 types × 12 levels)
+// equipment.js — Equipment System (Part 5 - 带升级队列)
 // ============================================================
 
 // ---------- Get equipment data ----------
@@ -36,7 +36,7 @@ function getEquipmentName(typeId, level) {
   return names[idx] || 'Unknown';
 }
 
-// ---------- Get upgrade cost ----------
+// ---------- 获取升级消耗 ----------
 function getEquipmentUpgradeCost(typeId) {
   const currentLevel = getEquipmentLevel(typeId);
   const maxLevel = getEquipmentMaxLevel();
@@ -53,7 +53,7 @@ function getEquipmentUpgradeCost(typeId) {
   return { gold: goldCost, iron: ironCost };
 }
 
-// ---------- Get equipment effect ----------
+// ---------- 获取装备效果 ----------
 function getEquipmentEffect(typeId) {
   const level = getEquipmentLevel(typeId);
   const type = getEquipmentType(typeId);
@@ -61,57 +61,38 @@ function getEquipmentEffect(typeId) {
   const effectKey = type.effect;
   const perLevel = CONFIG.EQUIPMENT.effectPerLevel[effectKey] || 0;
 
-  // Base effect
   let effect = level * perLevel;
-
-  // Special bonus (extra scaling)
   const special = CONFIG.EQUIPMENT.specialBonus[effectKey];
   if (special) {
     effect += level * special.perLevel;
   }
-
   return effect;
 }
 
 function getEquipmentEffects() {
   if (!player || !player.equipment) return {};
-
   const effects = {};
   const types = getEquipmentTypes();
 
   types.forEach(function(type) {
     const level = player.equipment[type.id] || 0;
     if (level > 0) {
-      const effectKey = type.effect;
-      const perLevel = CONFIG.EQUIPMENT.effectPerLevel[effectKey] || 0;
-      let effect = level * perLevel;
-      const special = CONFIG.EQUIPMENT.specialBonus[effectKey];
-      if (special) {
-        effect += level * special.perLevel;
-      }
-      effects[type.id] = effect;
+      effects[type.id] = getEquipmentEffect(type.id);
     }
   });
-
   return effects;
 }
 
-// ---------- Get total equipment CP ----------
+// ---------- 获取总装备 CP ----------
 function getEquipmentCP() {
   const effects = getEquipmentEffects();
   let cp = 0;
-  // Weapon gives CP directly
-  if (effects.weapon) {
-    cp += effects.weapon;
-  }
-  // Core gives all stats including CP
-  if (effects.core) {
-    cp += effects.core * 0.5;
-  }
+  if (effects.weapon) cp += effects.weapon;
+  if (effects.core) cp += effects.core * 0.5;
   return Math.floor(cp);
 }
 
-// ---------- Upgrade equipment ----------
+// ---------- 升级装备（使用队列） ----------
 function upgradeEquipment(typeId, useAd) {
   if (!player) return false;
 
@@ -134,17 +115,29 @@ function upgradeEquipment(typeId, useAd) {
     return false;
   }
 
+  // 检查是否已在队列中
+  if (isUpgrading('equipment', typeId)) {
+    showToast('⏳ ' + (t('upgradeInProgress') || 'Upgrade already in progress'));
+    return false;
+  }
+
   const cost = getEquipmentUpgradeCost(typeId);
   if (!cost) {
     showToast(t('equipMaxLevel') || 'Max level reached!');
     return false;
   }
 
+  // 广告加速模式
   if (useAd) {
     GameAds.reward('equipment', function() {
       if (!player.equipment) player.equipment = {};
       player.equipment[typeId] = (player.equipment[typeId] || 0) + 1;
-      player.combatPower = calcCombatPower();
+      if (typeof calcCombatPower === 'function') {
+        player.combatPower = calcCombatPower();
+      }
+      if (typeof updateDailyProgress === 'function') {
+        updateDailyProgress('equipment', 1);
+      }
       showToast('✅ ' + (t('equipUpgradedAd') || 'Gear upgraded! (Ad)'));
       if (typeof updateUI === 'function') updateUI();
     }, function() {
@@ -153,6 +146,7 @@ function upgradeEquipment(typeId, useAd) {
     return true;
   }
 
+  // 检查资源
   if (player.gold < cost.gold) {
     showToast(t('notEnoughGold') || 'Not enough gold! Need ' + formatNumber(cost.gold));
     return false;
@@ -163,80 +157,50 @@ function upgradeEquipment(typeId, useAd) {
     return false;
   }
 
+  // 扣除资源
   player.gold -= cost.gold;
   player.iron -= cost.iron;
-  if (!player.equipment) player.equipment = {};
-  player.equipment[typeId] = (player.equipment[typeId] || 0) + 1;
-  player.combatPower = calcCombatPower();
 
-  showToast('✅ ' + (t('equipUpgraded') || 'Gear upgraded!'));
-  if (typeof updateUI === 'function') updateUI();
-  return true;
-}
+  // 计算升级时间
+  const totalTime = getEquipmentUpgradeTime(typeId);
+  if (totalTime <= 0) {
+    // 直接完成
+    if (!player.equipment) player.equipment = {};
+    player.equipment[typeId] = (player.equipment[typeId] || 0) + 1;
+    if (typeof calcCombatPower === 'function') {
+      player.combatPower = calcCombatPower();
+    }
+    if (typeof updateDailyProgress === 'function') {
+      updateDailyProgress('equipment', 1);
+    }
+    showToast('✅ ' + (t('equipUpgraded') || 'Gear upgraded!'));
+    if (typeof updateUI === 'function') updateUI();
+    return true;
+  }
 
-// ---------- Get equipment stats for UI ----------
-function getEquipmentStats() {
-  if (!player) return { totalLevels: 0, types: [] };
-
-  const types = getEquipmentTypes();
-  let totalLevels = 0;
-  const typeList = [];
-
-  types.forEach(function(type) {
-    const level = player.equipment[type.id] || 0;
-    const isUnlocked = isEquipmentUnlocked(type.id);
-    const maxLevel = getEquipmentMaxLevel();
-    const effect = getEquipmentEffect(type.id);
-    const effectKey = type.effect;
-    const effectDisplay = getEquipmentEffectDisplay(effectKey, effect);
-    const nameObj = CONFIG.EQUIPMENT.names[type.id];
-    const currentName = nameObj && nameObj[Math.min(level, nameObj.length - 1)];
-
-    typeList.push({
-      id: type.id,
-      nameEn: type.nameEn,
-      nameZh: type.nameZh,
-      icon: type.icon || '🔧',
-      level: level,
-      maxLevel: maxLevel,
-      isUnlocked: isUnlocked,
-      isMaxed: level >= maxLevel,
-      unlockRank: type.unlockRank,
-      effect: effect,
-      effectDisplay: effectDisplay,
-      effectKey: effectKey,
-      currentNameEn: currentName ? currentName.nameEn : 'None',
-      currentNameZh: currentName ? currentName.nameZh : '无'
-    });
-
-    totalLevels += level;
-  });
-
-  return {
-    totalLevels: totalLevels,
-    totalCP: getEquipmentCP(),
-    types: typeList
-  };
-}
-
-function getEquipmentEffectDisplay(effectKey, value) {
+  // 添加到队列
   const isZh = langCurrent === 'zh';
-  const prefix = value > 0 ? '+' : '';
-  const percent = (value * 100).toFixed(1);
-
-  const effectMap = {
-    cp: (isZh ? '⚔️ +' : '⚔️ +') + Math.floor(value) + ' CP',
-    armor: (isZh ? '🛡️ -' : '🛡️ -') + percent + '%',
-    income: (isZh ? '💰 +' : '💰 +') + percent + '%',
-    boss: (isZh ? '💥 +' : '💥 +') + percent + '%',
-    efficiency: (isZh ? '⚡ +' : '⚡ +') + percent + '%',
-    all: (isZh ? '🌟 +' : '🌟 +') + percent + '%'
+  const item = {
+    type: 'equipment',
+    id: typeId,
+    nameEn: type.nameEn,
+    nameZh: type.nameZh,
+    totalTime: totalTime,
+    remainingTime: totalTime,
+    startTime: null,
+    status: 'pending',
+    targetLevel: currentLevel + 1
   };
 
-  return effectMap[effectKey] || (prefix + value);
+  const added = addUpgradeToQueue(item);
+  if (added) {
+    showToast('⏳ ' + (isZh ? '开始升级 ' + type.nameZh : 'Upgrading ' + type.nameEn));
+    if (typeof updateUI === 'function') updateUI();
+  }
+  return added;
 }
 
-// ---------- Apply equipment modifiers ----------
+// ---------- 获取装备修改器 ----------
 function getEquipmentModifiers() {
   const effects = getEquipmentEffects();
   const modifiers = {
@@ -264,7 +228,6 @@ function getEquipmentModifiers() {
     }
   }
 
-  // Core all bonus applies to everything
   if (modifiers.allBonus !== 0) {
     modifiers.cpBonus += modifiers.allBonus * 0.5;
     modifiers.incomeBonus += modifiers.allBonus;
@@ -274,4 +237,49 @@ function getEquipmentModifiers() {
   }
 
   return modifiers;
+}
+
+// ---------- 获取装备统计 ----------
+function getEquipmentStats() {
+  if (!player) return { totalLevels: 0, types: [] };
+
+  const types = getEquipmentTypes();
+  let totalLevels = 0;
+  const typeList = [];
+
+  types.forEach(function(type) {
+    const level = player.equipment[type.id] || 0;
+    const isUnlocked = isEquipmentUnlocked(type.id);
+    const maxLevel = getEquipmentMaxLevel();
+    const effect = getEquipmentEffect(type.id);
+    const effectKey = type.effect;
+    const isQueued = isUpgrading('equipment', type.id);
+    const nameObj = CONFIG.EQUIPMENT.names[type.id];
+    const currentName = nameObj && nameObj[Math.min(level, nameObj.length - 1)];
+
+    typeList.push({
+      id: type.id,
+      nameEn: type.nameEn,
+      nameZh: type.nameZh,
+      icon: type.icon || '🔧',
+      level: level,
+      maxLevel: maxLevel,
+      isUnlocked: isUnlocked,
+      isMaxed: level >= maxLevel,
+      unlockRank: type.unlockRank,
+      effect: effect,
+      effectKey: effectKey,
+      currentNameEn: currentName ? currentName.nameEn : 'None',
+      currentNameZh: currentName ? currentName.nameZh : '无',
+      isQueued: isQueued
+    });
+
+    totalLevels += level;
+  });
+
+  return {
+    totalLevels: totalLevels,
+    totalCP: getEquipmentCP(),
+    types: typeList
+  };
 }

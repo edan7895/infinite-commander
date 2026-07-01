@@ -1,95 +1,95 @@
 // ============================================================
-// lang.js — Bilingual System (English / Chinese) - Part 8
+// lang.js — Bilingual System (Part 12 - 添加转生翻译)
 // ============================================================
 
 const LANG = {
   zh: {
-    // ---------- UI ----------
-    rank: "军阶",
-    stars: "星级",
+    // ---------- UI 核心 ----------
+    rank: "军衔",
+    stars: "战星",
     exp: "经验",
     gold: "金币",
     cp: "战斗力",
     kill: "击杀",
-    boss: "首领",
-    autoFight: "自动战斗",
+    boss: "敌军指挥官",
+    autoFight: "战场",
     offlineEarning: "离线收益",
     doubleReward: "双倍领取",
-    promotion: "晋升考核",
-    trialPass: "通过考核！晋升成功！",
-    trialFail: "考核失败，继续努力！",
-    normalTrial: "普通晋升 50%",
+    promotion: "晋升试炼",
+    trialPass: "✅ 试炼通过！晋升成功！",
+    trialFail: "❌ 试炼失败！继续战斗！",
+    normalTrial: "标准试炼 50%",
     premiumTrial: "军费晋升 70%",
     watchAd: "观看广告 100%",
-    starsFull: "★★★★★ 已满，可晋升！",
+    starsFull: "★★★★★ 战星已满，准备晋升！",
     save: "存档",
     load: "读档",
     claim: "领取",
     confirm: "确认",
     cancel: "取消",
 
-    // ---------- Promotion ----------
-    promoteNormal: "普通晋升",
+    // ---------- 晋升 ----------
+    promoteNormal: "标准试炼",
     promoteGold: "军费晋升",
-    promoteAd: "推介信",
+    promoteAd: "推荐信",
     promoteNormalDesc: "消耗经验，成功率50%",
     promoteGoldDesc: "消耗金币，成功率70%",
     promoteAdDesc: "观看广告，100%成功",
-    failPenalty: "失败扣50%经验",
+    failPenalty: "失败扣除50%经验",
     goldLost: "金币不退",
     guaranteed: "必定成功",
 
-    // ---------- Story ----------
-    storyTitle: "⭐ 故事",
+    // ---------- 故事 ----------
+    storyTitle: "⭐ 战地日志",
     storySkip: "跳过",
     storyContinue: "继续 ▶",
 
-    // ---------- Buildings ----------
-    building: "建筑",
+    // ---------- 建筑 ----------
+    building: "基地设施",
     goldMine: "金矿",
     ironMine: "铁矿",
     riceFarm: "稻田",
     barracks: "兵营",
-    hospital: "医院",
-    buildingMaxLevel: "已达当前军阶最大等级",
+    hospital: "战地医院",
+    buildingMaxLevel: "已达当前军衔最大等级",
     notEnoughGold: "金币不足",
-    buildingUpgraded: "建筑升级成功！",
-    buildingProduction: "建筑产出",
+    buildingUpgraded: "设施升级成功！",
+    buildingProduction: "基地产出",
 
-    // ---------- Soldiers ----------
+    // ---------- 士兵 ----------
     soldier: "士兵",
-    soldiers: "士兵",
+    soldiers: "兵力",
     train: "训练",
     trainSoldier: "训练士兵",
-    treat: "治疗",
-    treatWounded: "治疗伤兵",
+    treat: "救治",
+    treatWounded: "救治伤兵",
     wounded: "伤兵",
     totalSoldiers: "总兵力",
     soldierMax: "最大兵力",
     ricePerSecond: "稻米消耗/秒",
     trainCost: "训练消耗",
-    healCost: "治疗消耗",
-    noWounded: "没有伤兵",
+    healCost: "救治消耗",
+    noWounded: "无伤兵",
     maxSoldiersReached: "已达最大兵力上限",
     notEnoughRice: "稻米不足",
     soldierTrained: "士兵训练完成！",
     soldierTrainedAd: "士兵训练完成！(广告加速)",
-    soldierHealed: "伤兵治疗完成！",
-    soldierHealedAd: "伤兵治疗完成！(广告加速)",
-    soldierDied: "士兵在战斗中阵亡",
+    soldierHealed: "伤兵救治完成！",
+    soldierHealedAd: "伤兵救治完成！(广告加速)",
+    soldierDied: "一名士兵在战斗中阵亡",
 
-    // ---------- Fleet ----------
+    // ---------- 舰队 ----------
     fleet: "舰队",
     fleetUpgrade: "升级战舰",
     fleetLocked: "未解锁",
     fleetLevel: "等级",
-    fleetCp: "舰队战斗力",
+    fleetCp: "舰队火力",
     fleetMaxLevel: "已达最大等级",
     notEnoughIron: "铁矿不足",
     fleetUpgraded: "战舰升级成功！",
     fleetUpgradedAd: "战舰升级成功！(广告加速)",
 
-    // ---------- Tech ----------
+    // ---------- 科技 ----------
     tech: "科技树",
     techPoint: "科技点",
     techUpgrade: "研究科技",
@@ -107,21 +107,21 @@ const LANG = {
     techPointGain: "获得科技点",
     notEnoughTechPoint: "科技点不足",
 
-    // ---------- Equipment ----------
-    equipment: "装备",
-    equipUpgrade: "升级装备",
+    // ---------- 装备 ----------
+    equipment: "军备",
+    equipUpgrade: "升级军备",
     equipLocked: "未解锁",
     equipMaxLevel: "已达最大等级",
-    equipCp: "战斗力",
-    equipArmor: "死亡率减免",
-    equipIncome: "收入加成",
-    equipBoss: "Boss伤害加成",
-    equipEfficiency: "战斗效率加成",
-    equipAll: "全属性加成",
-    equipUpgraded: "装备升级成功！",
-    equipUpgradedAd: "装备升级成功！(广告加速)",
+    equipCp: "+战斗力",
+    equipArmor: "-死亡率",
+    equipIncome: "+收入",
+    equipBoss: "+Boss伤害",
+    equipEfficiency: "+战斗效率",
+    equipAll: "+全属性",
+    equipUpgraded: "军备升级成功！",
+    equipUpgradedAd: "军备升级成功！(广告加速)",
 
-    // ---------- Daily Quests ----------
+    // ---------- 每日任务 ----------
     dailyQuest: "每日任务",
     dailyQuests: "每日任务",
     dailyReset: "每日重置",
@@ -133,88 +133,114 @@ const LANG = {
     dailyDone: "✅ 已完成",
     dailyClaimed: "已领取",
 
-    // ---------- Achievements ----------
-    achievement: "成就",
-    achievements: "成就",
-    achievementUnlocked: "🎉 成就解锁！",
+    // ---------- 签到 ----------
+    loginCheckIn: "每日签到",
+    loginDay: "签到第 {day} 天",
+    loginStreak: "连续签到 {streak} 天",
+    loginClaim: "签到领取",
+    loginReward: "签到奖励",
+    loginSpecial: "🎉 超级奖励！",
+    loginAllClaimed: "🎉 已完成所有签到！",
+    loginStreakBroken: "⚠️ 签到中断，已重置",
+    loginAlreadyClaimed: "📅 今日已签到",
+
+    // ---------- 成就 ----------
+    achievement: "功勋",
+    achievements: "功勋墙",
+    achievementUnlocked: "🎖️ 功勋解锁！",
     achievementLocked: "未解锁",
     achievementProgress: "进度",
     achievementReward: "奖励",
-    achievementClaimed: "已领取",
 
-    // ---------- Events ----------
-    event: "随机事件",
-    eventTitle: "⚡ 随机事件",
-    eventClaim: "领取奖励",
+    // ---------- 事件 ----------
+    event: "战场事件",
+    eventTitle: "⚡ 战场事件",
+    eventClaim: "领取战利品",
     eventDismiss: "忽略",
     eventAdBonus: "📺 广告奖励 ×2",
     eventNoAd: "广告加载失败，已普通领取",
-    eventBuff: "🔁 双倍收益 Buff",
+    eventBuff: "🔁 双倍收益增益",
 
-    // ---------- Event Names ----------
-    evt_airdrop_title: "空投补给",
-    evt_airdrop_desc: "一架货运无人机飘入你的星域。领取补给！",
-    evt_scout_title: "侦察兵报告",
-    evt_scout_desc: "侦察兵发现了一个废弃研究站。里面有宝贵的数据！",
-    evt_enemyTruck_title: "敌军补给车队",
-    evt_enemyTruck_desc: "一支敌军补给车队正在通过。是时候突袭了！",
-    evt_armsDealer_title: "神秘军火商",
-    evt_armsDealer_desc: "一个神秘人物向你提供先进武器。当然，要付出代价。",
-    evt_crash_title: "坠毁的运输船",
-    evt_crash_desc: "一艘受损的运输船在附近坠毁。幸存者需要帮助。",
-    evt_lab_title: "秘密实验室",
-    evt_lab_desc: "你的小队发现了一个地下实验室。里面有实验性科技！",
-    evt_reporter_title: "战地记者",
-    evt_reporter_desc: "一位记者想要记录你的故事。名气带来回报！",
-    evt_contest_title: "军事演习",
-    evt_contest_desc: "星域举办了一场军事竞赛。展示你的技能！",
-    evt_spy_title: "截获敌方情报",
-    evt_spy_desc: "你的间谍截获了敌方通信。宝贵的情报！",
-    evt_auction_title: "武器拍卖会",
-    evt_auction_desc: "一场黑市拍卖正在进行。有稀有武器出售！",
-    evt_merchant_title: "星际商人",
-    evt_merchant_desc: "一位星际商人路过。可以用铁矿换取金币！",
-    evt_rift_title: "时空裂隙",
-    evt_rift_desc: "一道时空裂隙出现在你的星域。获得大量科技点！",
-
-    // ---------- Tutorial ----------
+    // ---------- 教程 ----------
     tutorial: "主线任务",
     tutorialComplete: "✅ 任务完成！",
     tutorialReward: "奖励",
 
-    // ---------- Ads ----------
-    adLoading: "广告加载中...",
+    // ---------- 广告 ----------
+    adLoading: "加载广告中...",
     adComplete: "广告观看完成！",
     adFailed: "广告加载失败",
     adCooldown: "广告冷却中，请稍后",
     adDailyLimit: "今日广告次数已达上限",
+    adblockDetected: "请关闭广告拦截器以获取奖励",
 
-    // ---------- Misc ----------
-    attempts: "尝试",
-    success: "成功",
+    // ---------- 通用 ----------
+    attempts: "尝试次数",
+    success: "成功次数",
     iron: "铁矿",
-    level: "等级"
+    level: "等级",
+    pause: "停火",
+    start: "出击",
+    engage: "出击",
+    holdFire: "停火",
+
+    // ---------- 战争化 ----------
+    battlefield: "战场",
+    enemyCommander: "敌军指挥官",
+    promotionTrial: "晋升试炼",
+    battleStars: "战星",
+    militaryRank: "军衔",
+    earnBattleStars: "集满 5 颗战星即可晋升",
+    welcomeCommander: "欢迎回来，指挥官",
+    standingBy: "待命中...",
+    engaging: "交战中...",
+    victorious: "胜利！",
+    defeated: "战败...",
+    reinforcements: "增援抵达",
+
+    // ---------- ★★★ 转生系统 (Part 12) ★★★ ----------
+    prestige: "转生",
+    prestigeTitle: "🔄 转生系统",
+    prestigeDesc: "退伍重开，换取永久勋章",
+    prestigeRequirement: "需要军阶达到 {rank} 才能转生",
+    prestigeButton: "开始转生",
+    prestigeConfirm: "⚠️ 确认转生？这将重置几乎所有进度，但永久保留勋章！",
+    prestigeSuccess: "🎉 转生成功！获得 {medals} 枚勋章！",
+    prestigeMedal: "🏅 勋章",
+    prestigeMedals: "勋章数量",
+    prestigeBonus: "资源产出 +{bonus}%",
+    prestigeCount: "转生次数",
+    prestigeRequirements: "转生条件",
+    prestigeRewards: "转生奖励",
+    prestigeWarning: "⚠️ 转生将重置：军阶、建筑、士兵、舰队、科技、装备",
+    prestigeKeep: "✅ 保留：勋章、成就、每日任务进度、登录天数",
+    prestigeHistory: "转生历史",
+    prestigeNoHistory: "暂无转生记录",
+    prestigeMaxReached: "已达最大转生次数 ({max})",
+    prestigeReady: "✅ 可以转生",
+    prestigeNotReady: "🔒 未达到转生条件",
+    offlineCapNotice: "💡 离线收益已封顶 12 小时（超出部分不计）"
   },
 
   en: {
-    // ---------- UI ----------
-    rank: "Rank",
-    stars: "Stars",
+    // ---------- UI Core ----------
+    rank: "Military Rank",
+    stars: "Battle Stars",
     exp: "EXP",
     gold: "Gold",
     cp: "CP",
     kill: "Kills",
-    boss: "Boss",
-    autoFight: "Auto Combat",
+    boss: "Enemy Commander",
+    autoFight: "Battlefield",
     offlineEarning: "Offline Earnings",
     doubleReward: "Double Claim",
-    promotion: "Promotion",
-    trialPass: "Trial Passed! Promoted!",
-    trialFail: "Trial Failed! Keep fighting!",
-    normalTrial: "Standard 50%",
+    promotion: "Promotion Trial",
+    trialPass: "✅ Trial Passed! Promoted!",
+    trialFail: "❌ Trial Failed! Keep fighting!",
+    normalTrial: "Standard Trial 50%",
     premiumTrial: "Military Funds 70%",
     watchAd: "Watch Ad 100%",
-    starsFull: "★★★★★ Full! Ready to promote!",
+    starsFull: "★★★★★ Battle Stars Full! Ready to Promote!",
     save: "Save",
     load: "Load",
     claim: "Claim",
@@ -222,7 +248,7 @@ const LANG = {
     cancel: "Cancel",
 
     // ---------- Promotion ----------
-    promoteNormal: "Standard",
+    promoteNormal: "Standard Trial",
     promoteGold: "Military Funds",
     promoteAd: "Recommendation",
     promoteNormalDesc: "Cost EXP, 50% chance",
@@ -233,29 +259,29 @@ const LANG = {
     guaranteed: "Guaranteed",
 
     // ---------- Story ----------
-    storyTitle: "⭐ Story",
+    storyTitle: "⭐ War Log",
     storySkip: "Skip",
     storyContinue: "Continue ▶",
 
     // ---------- Buildings ----------
-    building: "Buildings",
+    building: "Base Facilities",
     goldMine: "Gold Mine",
     ironMine: "Iron Mine",
     riceFarm: "Rice Farm",
     barracks: "Barracks",
-    hospital: "Hospital",
+    hospital: "Field Hospital",
     buildingMaxLevel: "Max level for current rank",
     notEnoughGold: "Not enough gold!",
-    buildingUpgraded: "Building upgraded!",
-    buildingProduction: "Building Production",
+    buildingUpgraded: "Facility upgraded!",
+    buildingProduction: "Base Production",
 
     // ---------- Soldiers ----------
     soldier: "Soldier",
     soldiers: "Soldiers",
     train: "Train",
     trainSoldier: "Train Soldier",
-    treat: "Treat",
-    treatWounded: "Treat Wounded",
+    treat: "Heal",
+    treatWounded: "Heal Wounded",
     wounded: "Wounded",
     totalSoldiers: "Total Soldiers",
     soldierMax: "Max Soldiers",
@@ -276,7 +302,7 @@ const LANG = {
     fleetUpgrade: "Upgrade Ship",
     fleetLocked: "Locked",
     fleetLevel: "Level",
-    fleetCp: "Fleet CP",
+    fleetCp: "Fleet Firepower",
     fleetMaxLevel: "Max level reached",
     notEnoughIron: "Not enough iron!",
     fleetUpgraded: "Ship upgraded!",
@@ -301,7 +327,7 @@ const LANG = {
     notEnoughTechPoint: "Not enough tech points!",
 
     // ---------- Equipment ----------
-    equipment: "Equipment",
+    equipment: "Armaments",
     equipUpgrade: "Upgrade Gear",
     equipLocked: "Locked",
     equipMaxLevel: "Max level reached",
@@ -314,7 +340,7 @@ const LANG = {
     equipUpgraded: "Gear upgraded!",
     equipUpgradedAd: "Gear upgraded! (Ad Boost)",
 
-    // ---------- Daily Quests ----------
+    // ---------- Daily ----------
     dailyQuest: "Daily Quest",
     dailyQuests: "Daily Quests",
     dailyReset: "Daily Reset",
@@ -326,49 +352,33 @@ const LANG = {
     dailyDone: "✅ Done",
     dailyClaimed: "Claimed",
 
+    // ---------- Login ----------
+    loginCheckIn: "Daily Login",
+    loginDay: "Day {day}",
+    loginStreak: "{streak} day streak",
+    loginClaim: "Claim Login",
+    loginReward: "Login Reward",
+    loginSpecial: "🎉 Super Reward!",
+    loginAllClaimed: "🎉 All login rewards claimed!",
+    loginStreakBroken: "⚠️ Login streak broken, reset",
+    loginAlreadyClaimed: "📅 Already claimed today",
+
     // ---------- Achievements ----------
     achievement: "Achievement",
     achievements: "Achievements",
-    achievementUnlocked: "🎉 Achievement Unlocked!",
+    achievementUnlocked: "🎖️ Achievement Unlocked!",
     achievementLocked: "Locked",
     achievementProgress: "Progress",
     achievementReward: "Reward",
-    achievementClaimed: "Claimed",
 
     // ---------- Events ----------
-    event: "Random Event",
-    eventTitle: "⚡ Random Event",
-    eventClaim: "Claim Reward",
+    event: "Battle Event",
+    eventTitle: "⚡ Battle Event",
+    eventClaim: "Claim Loot",
     eventDismiss: "Dismiss",
     eventAdBonus: "📺 Ad Reward ×2",
     eventNoAd: "Ad failed, normal reward claimed",
     eventBuff: "🔁 Double Rewards Buff",
-
-    // ---------- Event Names ----------
-    evt_airdrop_title: "Airdrop Supply",
-    evt_airdrop_desc: "A cargo drone drifts into your sector. Claim the supplies!",
-    evt_scout_title: "Scout Reports",
-    evt_scout_desc: "Your scouts discovered an abandoned research station. Valuable data inside!",
-    evt_enemyTruck_title: "Enemy Supply Convoy",
-    evt_enemyTruck_desc: "An enemy supply convoy is passing through. Time for a raid!",
-    evt_armsDealer_title: "Mysterious Arms Dealer",
-    evt_armsDealer_desc: "A shadowy figure offers you advanced weaponry. For a price.",
-    evt_crash_title: "Crashed Dropship",
-    evt_crash_desc: "A damaged dropship crash-landed nearby. Survivors need help.",
-    evt_lab_title: "Secret Lab Discovery",
-    evt_lab_desc: "Your team discovered an underground lab. Experimental tech inside!",
-    evt_reporter_title: "War Correspondent",
-    evt_reporter_desc: "A journalist wants to document your story. Popularity brings rewards!",
-    evt_contest_title: "Military Exercise",
-    evt_contest_desc: "The sector holds a military competition. Show your skills!",
-    evt_spy_title: "Enemy Intel Captured",
-    evt_spy_desc: "Your spies intercepted enemy communications. Valuable intel!",
-    evt_auction_title: "Weapons Auction",
-    evt_auction_desc: "A black market auction is happening. Rare weapons available!",
-    evt_merchant_title: "Star Merchant",
-    evt_merchant_desc: "A star merchant passes by. Trade iron for gold!",
-    evt_rift_title: "Temporal Rift",
-    evt_rift_desc: "A temporal rift appears in your sector. Massive tech points!",
 
     // ---------- Tutorial ----------
     tutorial: "Main Quest",
@@ -381,12 +391,54 @@ const LANG = {
     adFailed: "Ad failed to load",
     adCooldown: "Ad cooldown, please wait",
     adDailyLimit: "Daily ad limit reached",
+    adblockDetected: "Please disable adblocker",
 
-    // ---------- Misc ----------
+    // ---------- Common ----------
     attempts: "Attempts",
     success: "Success",
     iron: "Iron",
-    level: "Level"
+    level: "Level",
+    pause: "Hold Fire",
+    start: "Engage",
+    engage: "Engage",
+    holdFire: "Hold Fire",
+
+    // ---------- War Themed ----------
+    battlefield: "Battlefield",
+    enemyCommander: "Enemy Commander",
+    promotionTrial: "Promotion Trial",
+    battleStars: "Battle Stars",
+    militaryRank: "Military Rank",
+    earnBattleStars: "Earn 5 Battle Stars to promote",
+    welcomeCommander: "Welcome back, Commander",
+    standingBy: "Standing by...",
+    engaging: "Engaging...",
+    victorious: "Victorious!",
+    defeated: "Defeated...",
+    reinforcements: "Reinforcements arrived",
+
+    // ---------- ★★★ Prestige System (Part 12) ★★★ ----------
+    prestige: "Prestige",
+    prestigeTitle: "🔄 Prestige System",
+    prestigeDesc: "Retire and reset for permanent medals",
+    prestigeRequirement: "Requires rank {rank} to prestige",
+    prestigeButton: "Start Prestige",
+    prestigeConfirm: "⚠️ Confirm Prestige? This will reset most progress but keep medals!",
+    prestigeSuccess: "🎉 Prestige successful! Gained {medals} medals!",
+    prestigeMedal: "🏅 Medal",
+    prestigeMedals: "Medals",
+    prestigeBonus: "+{bonus}% Resource Production",
+    prestigeCount: "Prestige Count",
+    prestigeRequirements: "Requirements",
+    prestigeRewards: "Rewards",
+    prestigeWarning: "⚠️ Prestige will reset: Rank, Buildings, Soldiers, Fleet, Tech, Equipment",
+    prestigeKeep: "✅ Keeps: Medals, Achievements, Daily Progress, Login Days",
+    prestigeHistory: "Prestige History",
+    prestigeNoHistory: "No prestige history",
+    prestigeMaxReached: "Max prestige reached ({max})",
+    prestigeReady: "✅ Ready to Prestige",
+    prestigeNotReady: "🔒 Conditions not met",
+    offlineCapNotice: "💡 Offline earnings capped at 12 hours"
   }
 };
 

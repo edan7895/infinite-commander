@@ -1,5 +1,5 @@
 // ============================================================
-// player.js — Player Object (Part 6)
+// player.js — Player Object (Part 12 - 添加转生数据)
 // ============================================================
 
 function createPlayer() {
@@ -55,6 +55,9 @@ function createPlayer() {
     // ---------- Equipment ----------
     equipment: CONFIG.STARTING.equipment || {},
 
+    // ---------- Upgrade Queue ----------
+    upgradeQueue: CONFIG.STARTING.upgradeQueue || [],
+
     // ---------- Time ----------
     offlineSeconds: 0,
     totalPlayTime: 0,
@@ -67,7 +70,10 @@ function createPlayer() {
       kills: 0,
       goldEarned: 0,
       adWatched: 0,
-      date: Date.now()
+      date: Date.now(),
+      loginDay: 0,
+      loginStreak: 0,
+      lastLoginDate: Date.now()
     },
 
     // ---------- Achievements ----------
@@ -78,7 +84,21 @@ function createPlayer() {
     tutorialCompleted: false,
 
     // ---------- Events ----------
-    lastEventTime: 0
+    lastEventTime: 0,
+
+    // ---------- Ads ----------
+    adCount: CONFIG.STARTING.adCount || 0,
+
+    // ---------- Login ----------
+    loginDays: CONFIG.STARTING.loginDays || 0,
+
+    // ---------- 新手引导 ----------
+    guideCompleted: false,
+
+    // ===== ★★★ Part 12: 转生数据 ★★★ =====
+    prestigeCount: CONFIG.STARTING.prestigeCount || 0,
+    prestigeMedals: CONFIG.STARTING.prestigeMedals || 0,
+    prestigeHistory: CONFIG.STARTING.prestigeHistory || []
   };
 }
 
@@ -91,4 +111,67 @@ function initPlayer() {
     player = protectPlayer(player);
   }
   return player;
+}
+
+// ---------- 获取升级队列 ----------
+function getUpgradeQueue() {
+  if (!player) return [];
+  if (!player.upgradeQueue) player.upgradeQueue = [];
+  return player.upgradeQueue;
+}
+
+// ---------- 添加升级任务 ----------
+function addUpgradeToQueue(upgradeItem) {
+  if (!player) return false;
+  if (!player.upgradeQueue) player.upgradeQueue = [];
+  const existing = player.upgradeQueue.find(function(item) {
+    return item.type === upgradeItem.type &&
+           item.id === upgradeItem.id &&
+           item.status === 'pending';
+  });
+  if (existing) return false;
+  player.upgradeQueue.push(upgradeItem);
+  return true;
+}
+
+// ---------- 获取特定类型的升级 ----------
+function getUpgradeByType(type, id) {
+  const queue = getUpgradeQueue();
+  return queue.find(function(item) {
+    return item.type === type && item.id === id && item.status === 'pending';
+  });
+}
+
+// ---------- 检查是否正在升级 ----------
+function isUpgrading(type, id) {
+  return getUpgradeByType(type, id) !== undefined;
+}
+
+// ---------- 获取玩家数据的深拷贝 ----------
+function getPlayerDataForSave() {
+  if (!player) return null;
+  return JSON.parse(JSON.stringify(player));
+}
+
+// ---------- 从存档数据恢复玩家 ----------
+function restorePlayerFromSave(data) {
+  if (!data) return false;
+  if (!player) {
+    player = createPlayer();
+  }
+  for (const key in data) {
+    if (data.hasOwnProperty(key) && typeof data[key] !== 'function') {
+      if (data[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
+        if (!player[key]) player[key] = {};
+        for (const subKey in data[key]) {
+          if (data[key].hasOwnProperty(subKey)) {
+            player[key][subKey] = data[key][subKey];
+          }
+        }
+      } else {
+        player[key] = data[key];
+      }
+    }
+  }
+  return true;
 }

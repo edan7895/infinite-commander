@@ -1,7 +1,47 @@
 // ============================================================
-// ui.js — UI Rendering Engine (Part 8)
+// ui.js — UI Rendering Engine (Part 7 - Boss 领取按钮修复)
 // ============================================================
 
+// ---------- 缓存：上次刷新的数据哈希 ----------
+let _lastUIHash = '';
+let _lastRefreshTime = 0;
+
+function computeUIHash() {
+  if (!player) return '';
+  const p = player;
+  const data = {
+    gold: p.gold,
+    exp: p.exp,
+    stars: p.stars,
+    rankId: p.rankId,
+    kills: p.totalKills,
+    combatPower: p.combatPower,
+    soldiers: p.soldiers,
+    wounded: p.wounded,
+    bossActive: p.bossActive,
+    bossHealth: p.bossHealth,
+    offlineSeconds: p.offlineSeconds,
+    doubleBuff: p.doubleBuff,
+    buildings: p.buildings,
+    fleet: p.fleet,
+    tech: p.tech,
+    equipment: p.equipment,
+    daily: p.daily,
+    achievements: p.achievements
+  };
+  return JSON.stringify(data);
+}
+
+function hasUIDataChanged() {
+  const currentHash = computeUIHash();
+  if (currentHash !== _lastUIHash) {
+    _lastUIHash = currentHash;
+    return true;
+  }
+  return false;
+}
+
+// ---------- 主 UI 更新 ----------
 function updateUI() {
   if (!player) return;
 
@@ -34,21 +74,21 @@ function updateUI() {
   const secs = p.totalPlayTime % 60;
   updateElement('playtime', mins + 'm ' + secs + 's');
 
-  // ----- Auto Fight -----
+  // ----- Battlefield -----
   const autoStatus = document.getElementById('auto-status');
   const autoBtn = document.getElementById('auto-btn');
   if (p.autoFight) {
     if (autoStatus) {
-      autoStatus.textContent = '▶ ' + (langCurrent === 'zh' ? '运行中' : 'Running');
+      autoStatus.textContent = '▶ ' + (langCurrent === 'zh' ? '交战中' : 'Engaging');
       autoStatus.className = 'badge badge-success';
     }
-    if (autoBtn) autoBtn.textContent = langCurrent === 'zh' ? '暂停' : 'Pause';
+    if (autoBtn) autoBtn.textContent = langCurrent === 'zh' ? '停火' : 'Hold Fire';
   } else {
     if (autoStatus) {
-      autoStatus.textContent = '⏸ ' + (langCurrent === 'zh' ? '已暂停' : 'Paused');
+      autoStatus.textContent = '⏸ ' + (langCurrent === 'zh' ? '待命中' : 'Standing By');
       autoStatus.className = 'badge badge-danger';
     }
-    if (autoBtn) autoBtn.textContent = langCurrent === 'zh' ? '启动' : 'Start';
+    if (autoBtn) autoBtn.textContent = langCurrent === 'zh' ? '出击' : 'Engage';
   }
 
   // ----- Bottom -----
@@ -58,7 +98,7 @@ function updateUI() {
   const mins2 = Math.floor((p.totalPlayTime % 3600) / 60);
   updateElement('playtime-bottom', hours + 'h ' + mins2 + 'm');
 
-  // ----- Boss -----
+  // ----- Boss UI（含普通领取按钮） -----
   updateBossUI();
 
   // ----- Offline -----
@@ -83,17 +123,17 @@ function updateUI() {
     if (el) el.style.display = 'none';
   }
 
-  // ----- Building Production Summary -----
+  // ----- Base Production -----
   const prod = getTotalBuildingProduction();
   const prodEl = document.getElementById('building-production-summary');
   if (prodEl) {
-    prodEl.innerHTML = '🏗️ ' + (langCurrent === 'zh' ? '建筑产出' : 'Building') + ': ' +
+    prodEl.innerHTML = '🏗️ ' + (langCurrent === 'zh' ? '基地产出' : 'Base') + ': ' +
       formatNumber(prod.gold) + '💰/s ' +
       formatNumber(prod.iron) + '⛏️/s ' +
       formatNumber(prod.rice) + '🌾/s';
   }
 
-  // ----- Soldier Summary -----
+  // ----- Soldiers -----
   const stats = getSoldierStats();
   const soldierEl = document.getElementById('soldier-summary');
   if (soldierEl) {
@@ -105,7 +145,7 @@ function updateUI() {
       ' | 🌾 ' + stats.consumption.toFixed(2) + '/s';
   }
 
-  // ----- Fleet Summary -----
+  // ----- Fleet -----
   const fleetStats = getFleetStats();
   const fleetEl = document.getElementById('fleet-summary');
   if (fleetEl) {
@@ -116,7 +156,7 @@ function updateUI() {
       ' | ⚡ ' + fleetStats.totalCP + ' CP';
   }
 
-  // ----- Tech Summary -----
+  // ----- Tech -----
   const techStats = getTechStats();
   const techEl = document.getElementById('tech-summary');
   if (techEl) {
@@ -126,17 +166,17 @@ function updateUI() {
       ' | ⚡ ' + (techStats.totalTechPoints || 0) + ' ' + (isZh ? '科技点' : 'TP');
   }
 
-  // ----- Equipment Summary -----
+  // ----- Armaments -----
   const equipStats = getEquipmentStats();
   const equipEl = document.getElementById('equipment-summary');
   if (equipEl) {
     const isZh = langCurrent === 'zh';
-    equipEl.innerHTML = '🗡️ ' + (isZh ? '装备' : 'Gear') + ': ' +
+    equipEl.innerHTML = '🗡️ ' + (isZh ? '军备' : 'Armaments') + ': ' +
       equipStats.totalLevels + ' ' + (isZh ? '级' : 'levels') +
       ' | ⚡ +' + equipStats.totalCP + ' CP';
   }
 
-  // ----- Daily Quest Summary -----
+  // ----- Daily -----
   const dailyStats = getDailyStats();
   const dailyEl = document.getElementById('daily-summary');
   if (dailyEl) {
@@ -146,14 +186,37 @@ function updateUI() {
       (dailyStats.allCompleted ? ' ✅' : '');
   }
 
-  // ----- Achievement Summary -----
+  // ----- Achievements -----
   const achStats = getAchievementStats();
   const achEl = document.getElementById('achievement-summary');
   if (achEl) {
     const isZh = langCurrent === 'zh';
-    achEl.innerHTML = '🏆 ' + (isZh ? '成就' : 'Achievements') + ': ' +
+    achEl.innerHTML = '🏆 ' + (isZh ? '功勋' : 'Achievements') + ': ' +
       achStats.unlocked + '/' + achStats.total +
       ' (' + achStats.progress + '%)';
+  }
+
+  // ----- Upgrade Queue -----
+  const queueStats = getUpgradeQueueStats ? getUpgradeQueueStats() : { pending: 0 };
+  const queueEl = document.getElementById('upgrade-queue-status');
+  if (queueEl) {
+    const isZh = langCurrent === 'zh';
+    if (queueStats.pending > 0) {
+      const pendingItems = (player.upgradeQueue || []).filter(function(item) { return item.status === 'pending'; });
+      let statusText = '⏳ ' + (isZh ? '升级中' : 'Upgrading') + ': ';
+      pendingItems.forEach(function(item, index) {
+        const display = getQueueItemDisplay ? getQueueItemDisplay(item) : { name: item.id, remainingFormatted: '0s' };
+        if (index > 0) statusText += ', ';
+        statusText += display.name + ' (' + display.remainingFormatted + ')';
+      });
+      queueEl.textContent = statusText;
+      queueEl.style.color = '#f5d742';
+      queueEl.style.display = 'block';
+    } else {
+      queueEl.textContent = '✅ ' + (isZh ? '所有升级已完成' : 'All upgrades complete');
+      queueEl.style.color = '#7bed9f';
+      queueEl.style.display = 'block';
+    }
   }
 
   // ----- Event Status -----
@@ -201,6 +264,13 @@ function updateUI() {
     const hasSave = localStorage.getItem('commander_save') ? true : false;
     info.textContent = hasSave ? '📁 ' + (langCurrent === 'zh' ? '存档已加载' : 'Save Loaded') : '📁 ' + (langCurrent === 'zh' ? '新游戏' : 'New Game');
   }
+
+  // 自动刷新弹窗
+  if (hasUIDataChanged()) {
+    if (typeof refreshCurrentView === 'function') {
+      refreshCurrentView();
+    }
+  }
 }
 
 function updateElement(id, content, styleValue, styleProp) {
@@ -214,12 +284,14 @@ function updateElement(id, content, styleValue, styleProp) {
   }
 }
 
+// ---------- Boss UI（含普通领取 + 双倍领取按钮） ----------
 function updateBossUI() {
   const p = player;
   const bossStatus = document.getElementById('boss-status');
+
   if (p.bossActive) {
     if (bossStatus) {
-      bossStatus.textContent = '⚔️ ' + (langCurrent === 'zh' ? '战斗中' : 'Fighting');
+      bossStatus.textContent = '⚔️ ' + (langCurrent === 'zh' ? '交战中' : 'Engaging');
       bossStatus.className = 'badge badge-danger';
     }
     document.getElementById('boss-active-area').style.display = 'block';
@@ -245,15 +317,39 @@ function updateBossUI() {
     updateElement('boss-minutes', Math.floor(remaining / 60));
   }
 
-  if (lastBossReward) {
-    document.getElementById('boss-reward').style.display = 'block';
-    updateElement('boss-gold', formatNumber(lastBossReward.gold));
-    updateElement('boss-exp', formatNumber(lastBossReward.exp));
-  } else {
-    document.getElementById('boss-reward').style.display = 'none';
+  // ★★★ Boss 奖励区域（含普通领取 + 双倍领取按钮） ★★★
+  const rewardEl = document.getElementById('boss-reward');
+  if (rewardEl) {
+    if (lastBossReward) {
+      rewardEl.style.display = 'block';
+      updateElement('boss-gold', formatNumber(lastBossReward.gold));
+      updateElement('boss-exp', formatNumber(lastBossReward.exp));
+
+      // 确保两个按钮都存在
+      let claimBtn = document.getElementById('boss-claim-btn');
+      let doubleBtn = document.getElementById('boss-double-btn');
+
+      // 如果按钮不存在，重建 HTML
+      if (!claimBtn || !doubleBtn) {
+        const isZh = langCurrent === 'zh';
+        rewardEl.innerHTML = `
+          🎁 +<span id="boss-gold">${formatNumber(lastBossReward.gold)}</span>💰 +<span id="boss-exp">${formatNumber(lastBossReward.exp)}</span>EXP
+          <button class="btn btn-ghost btn-sm" id="boss-claim-btn" onclick="claimBossReward();">${isZh ? '领取' : 'Claim'}</button>
+          <button class="btn btn-gold btn-sm" id="boss-double-btn" onclick="claimBossRewardWithAd();">📺 ${isZh ? '双倍领取' : 'Double Claim'}</button>
+        `;
+      } else {
+        // 更新已有按钮的文字
+        const isZh = langCurrent === 'zh';
+        claimBtn.textContent = isZh ? '领取' : 'Claim';
+        doubleBtn.textContent = '📺 ' + (isZh ? '双倍领取' : 'Double Claim');
+      }
+    } else {
+      rewardEl.style.display = 'none';
+    }
   }
 }
 
+// ---------- 晋升按钮 ----------
 function updatePromoteButtons() {
   const p = player;
   const goldCost = getPromoteGoldCost(p.rankId);
@@ -292,6 +388,7 @@ function updatePromoteButtons() {
   }
 }
 
+// ---------- 标签更新 ----------
 function updateLabels() {
   const isZh = langCurrent === 'zh';
 
@@ -317,20 +414,30 @@ function updateLabels() {
     const el = document.getElementById(id);
     if (el) {
       if (id === 'boss-next-label') {
-        el.textContent = t('boss') + (isZh ? ' 下次' : ' Next');
+        el.textContent = (isZh ? '下次' : 'Next') + ' ' + t('boss');
       } else if (id === 'promo-need') {
-        el.textContent = isZh ? '集满 5 星解锁晋升' : 'Collect 5 stars to promote';
+        el.textContent = isZh ? '集满 5 颗战星即可晋升' : 'Earn 5 Battle Stars to promote';
       } else if (id === 'attempts-label') {
-        el.textContent = isZh ? '尝试' : 'Attempts';
+        el.textContent = isZh ? '尝试次数' : 'Attempts';
       } else if (id === 'success-label') {
-        el.textContent = isZh ? '成功' : 'Success';
+        el.textContent = isZh ? '成功次数' : 'Success';
+      } else if (id === 'stars-label') {
+        el.textContent = isZh ? '战星' : 'Battle Stars';
+      } else if (id === 'auto-label') {
+        el.textContent = '⚔️ ' + t('battlefield');
+      } else if (id === 'boss-label') {
+        el.textContent = '👹 ' + t('enemyCommander');
+      } else if (id === 'promo-label') {
+        el.textContent = '⭐ ' + t('promotionTrial');
+      } else if (id === 'stars-full') {
+        el.textContent = '✅ ★★★★★ ' + t('starsFull');
       } else {
         el.textContent = t(key);
       }
     }
   }
 
-  // Promotion buttons
+  // 晋升按钮
   const normalBtn = document.getElementById('btn-normal-promote');
   if (normalBtn) {
     const nameEl = normalBtn.querySelector('.promo-name');
@@ -363,14 +470,13 @@ function updateLabels() {
     if (costEl) costEl.textContent = '📺 ' + t('watchAd');
   }
 
-  // Offline buttons
+  // 离线按钮
   const claimBtn = document.getElementById('offline-claim-btn');
   if (claimBtn) claimBtn.textContent = t('claim');
   const doubleBtn = document.getElementById('offline-double-btn');
   if (doubleBtn) doubleBtn.innerHTML = '📺 ' + t('doubleReward');
 
-  const bossDouble = document.getElementById('boss-double-btn');
-  if (bossDouble) bossDouble.textContent = t('doubleReward');
+  // ★★★ Boss 按钮文字（由 updateBossUI 动态更新） ★★★
 
   const btnMap = {
     'btn-rank': 'rank',
@@ -380,13 +486,24 @@ function updateLabels() {
     'btn-soldier': 'soldier',
     'btn-equip': 'equipment',
     'btn-daily': 'dailyQuests',
-    'btn-achievement': 'achievements'
+    'btn-achievement': 'achievements',
+    'btn-login': 'loginCheckIn'
   };
   for (const [id, key] of Object.entries(btnMap)) {
     const el = document.getElementById(id);
     if (el) {
       const icon = el.textContent.charAt(0);
-      el.innerHTML = icon + ' ' + t(key);
+      if (id === 'btn-building') {
+        el.innerHTML = '🏗️ ' + t('building');
+      } else if (id === 'btn-equip') {
+        el.innerHTML = '🗡️ ' + t('equipment');
+      } else if (id === 'btn-achievement') {
+        el.innerHTML = '🏆 ' + t('achievements');
+      } else if (id === 'btn-login') {
+        el.innerHTML = '📅 ' + t('loginCheckIn');
+      } else {
+        el.innerHTML = icon + ' ' + t(key);
+      }
     }
   }
 

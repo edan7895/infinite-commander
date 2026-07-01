@@ -1,5 +1,5 @@
 // ============================================================
-// building.js — Building System (Gold Mine, Iron Mine, Rice Farm, Barracks, Hospital)
+// building.js — Building System (Part 9 - 指数级产出)
 // ============================================================
 
 // ---------- Get building data ----------
@@ -26,15 +26,21 @@ function getBuildingUpgradeCost(type) {
   return Math.floor(config.baseCost * Math.pow(config.costMultiplier, level - 1));
 }
 
+// ===== ★★★ 指数级建筑产出 ★★★ =====
 function getBuildingYield(type) {
   const config = getBuildingConfig(type);
   if (!config) return 0;
   const level = getBuildingLevel(type);
   if (type === 'barracks' || type === 'hospital') return 0;
-  return Math.floor(config.baseYield * level * config.yieldMultiplier);
+
+  // ★★★ 指数级产出：基础产出 * 等级 * (1.05 ^ 等级) ★★★
+  // 低等级增长平缓，高等级爆发增长
+  const baseYield = config.baseYield || 1;
+  const exponential = Math.pow(1.05, level - 1);
+  return Math.floor(baseYield * level * exponential);
 }
 
-// ---------- Upgrade building ----------
+// ---------- 升级建筑（使用队列） ----------
 function upgradeBuilding(type, useAd) {
   if (!player) return false;
 
@@ -46,11 +52,19 @@ function upgradeBuilding(type, useAd) {
     return false;
   }
 
+  if (isUpgrading('building', type)) {
+    showToast('⏳ ' + (t('upgradeInProgress') || 'Upgrade already in progress'));
+    return false;
+  }
+
   const cost = getBuildingUpgradeCost(type);
 
   if (useAd) {
     GameAds.reward('building', function() {
       player.buildings[type] = (player.buildings[type] || 1) + 1;
+      if (typeof updateDailyProgress === 'function') {
+        updateDailyProgress('building', 1);
+      }
       showToast('✅ ' + (t('buildingUpgraded') || 'Building upgraded!') + ' (Ad)');
       if (typeof updateUI === 'function') updateUI();
     }, function() {
@@ -65,13 +79,48 @@ function upgradeBuilding(type, useAd) {
   }
 
   player.gold -= cost;
-  player.buildings[type] = (player.buildings[type] || 1) + 1;
-  showToast('✅ ' + (t('buildingUpgraded') || 'Building upgraded!'));
-  if (typeof updateUI === 'function') updateUI();
-  return true;
+
+  const totalTime = getBuildingUpgradeTime(type);
+  if (totalTime <= 0) {
+    player.buildings[type] = (player.buildings[type] || 1) + 1;
+    if (typeof updateDailyProgress === 'function') {
+      updateDailyProgress('building', 1);
+    }
+    showToast('✅ ' + (t('buildingUpgraded') || 'Building upgraded!'));
+    if (typeof updateUI === 'function') updateUI();
+    return true;
+  }
+
+  const isZh = langCurrent === 'zh';
+  const nameMap = {
+    goldMine: t('goldMine'),
+    ironMine: t('ironMine'),
+    riceFarm: t('riceFarm'),
+    barracks: t('barracks'),
+    hospital: t('hospital')
+  };
+
+  const item = {
+    type: 'building',
+    id: type,
+    nameEn: type,
+    nameZh: nameMap[type] || type,
+    totalTime: totalTime,
+    remainingTime: totalTime,
+    startTime: null,
+    status: 'pending',
+    targetLevel: currentLevel + 1
+  };
+
+  const added = addUpgradeToQueue(item);
+  if (added) {
+    showToast('⏳ ' + (isZh ? '开始升级 ' + (nameMap[type] || type) : 'Upgrading ' + type));
+    if (typeof updateUI === 'function') updateUI();
+  }
+  return added;
 }
 
-// ---------- Calculate total building production per second ----------
+// ---------- 计算总建筑产出 ----------
 function getTotalBuildingProduction() {
   if (!player) return { gold: 0, iron: 0, rice: 0 };
 
@@ -93,18 +142,24 @@ function getTotalBuildingProduction() {
   };
 }
 
-// ---------- Apply building production (called every second) ----------
+// ---------- 应用建筑产出 ----------
 function applyBuildingProduction() {
   if (!player) return;
   const production = getTotalBuildingProduction();
 
-  player.gold += production.gold;
-  player.totalGold += production.gold;
-  player.iron += production.iron;
-  player.rice += production.rice;
+  const hasBuildingUpgrade = (player.upgradeQueue || []).some(function(item) {
+    return item.type === 'building' && item.status === 'pending';
+  });
+
+  const multiplier = hasBuildingUpgrade ? 0.5 : 1;
+
+  player.gold += Math.floor(production.gold * multiplier);
+  player.totalGold += Math.floor(production.gold * multiplier);
+  player.iron += Math.floor(production.iron * multiplier);
+  player.rice += Math.floor(production.rice * multiplier);
 }
 
-// ---------- Building upgradeable list for UI ----------
+// ---------- 获取可升级建筑列表 ----------
 function getBuildingUpgradeableList() {
   const types = ['goldMine', 'ironMine', 'riceFarm', 'barracks', 'hospital'];
   const result = [];
@@ -114,12 +169,14 @@ function getBuildingUpgradeableList() {
     const level = getBuildingLevel(type);
     if (level < maxLevel) {
       const cost = getBuildingUpgradeCost(type);
+      const isQueued = isUpgrading('building', type);
       result.push({
         type: type,
         level: level,
         maxLevel: maxLevel,
         cost: cost,
-        canAfford: player.gold >= cost
+        canAfford: player.gold >= cost,
+        isQueued: isQueued
       });
     }
   });

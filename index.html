@@ -5,10 +5,198 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Infinite Commander</title>
   <link rel="stylesheet" href="./css/style.css">
+  <!-- ★★★★★ CrazyGames SDK（等开通后取消注释） ★★★★★ -->
+  <!-- <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script> -->
+  <style>
+    /* ===== 引导样式 ===== */
+    .guide-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: guideFadeIn 0.4s ease;
+      padding: 20px;
+    }
 
-<!-- 先全部注释，等开通后再取消 -->
-<!-- <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script> -->
+    @keyframes guideFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
 
+    @keyframes guidePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes guideSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .guide-modal {
+      max-width: 520px;
+      width: 100%;
+      background: rgba(11, 14, 20, 0.96);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 215, 0, 0.15);
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.9), 0 0 80px rgba(255, 215, 0, 0.04);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .guide-modal::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at center, rgba(255, 215, 0, 0.03), transparent 70%);
+      animation: guideSpin 30s linear infinite;
+      pointer-events: none;
+    }
+
+    .guide-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .guide-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .guide-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f5d742;
+      text-shadow: 0 0 20px rgba(245, 215, 66, 0.15);
+      margin: 0;
+    }
+
+    .guide-body {
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+      min-height: 80px;
+    }
+
+    .guide-text {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: #d0d5dd;
+      margin: 0;
+    }
+
+    .guide-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .guide-button {
+      padding: 12px 40px !important;
+      font-size: 1.1rem !important;
+      min-height: 48px !important;
+      width: 100%;
+      max-width: 280px;
+      animation: guidePulse 2s infinite;
+      border-radius: 10px !important;
+    }
+
+    .guide-button:active {
+      animation: none;
+      transform: scale(0.96);
+    }
+
+    .guide-progress-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .guide-progress-track {
+      flex: 1;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .guide-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f5d742, #d4a800);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+      width: 8%;
+    }
+
+    .guide-progress-text {
+      font-size: 0.7rem;
+      color: #666;
+      margin-left: 12px;
+      min-width: 34px;
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .guide-skip {
+      font-size: 0.7rem;
+      color: #444;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+
+    .guide-skip:hover {
+      color: #888;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    @media (max-width: 480px) {
+      .guide-modal {
+        padding: 24px 18px;
+        border-radius: 16px;
+      }
+      .guide-icon {
+        font-size: 1.8rem;
+      }
+      .guide-title {
+        font-size: 1rem;
+      }
+      .guide-text {
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+      .guide-button {
+        padding: 10px 24px !important;
+        font-size: 1rem !important;
+        min-height: 44px !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -21,7 +209,7 @@
       <h2>军魂飞升</h2>
       <div class="panel">
         <p>Infinite Commander<br>军魂飞升</p>
-        <p class="sub">From Recruit to Marshal · Idle Progression · Boss Battles · Legion Wars</p>
+        <p class="sub">From Recruit to Marshal · Idle Progression · Enemy Commander · Legion Wars</p>
       </div>
       <div class="btn-group">
         <button id="lang-zh-btn" onclick="switchLang('zh');">中文</button>
@@ -29,7 +217,7 @@
       </div>
       <button class="btn-start" onclick="startGame();">Begin Command</button>
       <div class="info" id="save-info">📁 New Game</div>
-      <div class="version">v1.0 · Part 8</div>
+      <div class="version">v1.0 · Part 12</div>
     </div>
   </div>
 
@@ -77,18 +265,18 @@
             <div class="progress-bar"><div class="progress-fill" id="exp-bar" style="width:0%;"></div></div>
           </div>
 
-          <!-- 星级 -->
+          <!-- 战星 -->
           <div class="stat-row">
-            <div class="stat-label"><span id="stars-label">Stars</span></div>
+            <div class="stat-label"><span id="stars-label">Battle Stars</span></div>
             <div class="stat-value"><span id="stars-count">0</span>/5</div>
             <div class="progress-bar"><div class="progress-fill gold" id="stars-bar" style="width:0%;"></div></div>
           </div>
 
-          <!-- 自动战斗 -->
+          <!-- 战场 -->
           <div class="auto-fight-bar">
-            <span id="auto-label">⚔️ Auto Combat</span>
+            <span id="auto-label">⚔️ Battlefield</span>
             <span class="badge badge-success" id="auto-status">▶ Running</span>
-            <button class="btn btn-ghost" onclick="toggleAutoFight();" id="auto-btn">Pause</button>
+            <button class="btn btn-ghost" onclick="toggleAutoFight();" id="auto-btn">Hold Fire</button>
           </div>
 
           <!-- 统计 -->
@@ -97,10 +285,10 @@
             <span>⏱ <span id="playtime">0m 0s</span></span>
           </div>
 
-          <!-- Boss 状态 -->
+          <!-- Boss -->
           <div class="boss-area">
             <div class="flex-between">
-              <span class="boss-label" id="boss-label">👹 Boss</span>
+              <span class="boss-label" id="boss-label">👹 Enemy Commander</span>
               <span class="badge badge-warning" id="boss-status">⏳ Cooldown</span>
             </div>
             <div id="boss-active-area" style="display:none;">
@@ -111,11 +299,12 @@
               <div class="progress-bar"><div class="progress-fill boss" id="boss-bar" style="width:100%;"></div></div>
             </div>
             <div id="boss-cooldown-area">
-              <div class="boss-timer"><span id="boss-next-label">Next Boss</span>: <span id="boss-timer">600</span>s (~<span id="boss-minutes">10</span>min)</div>
+              <div class="boss-timer"><span id="boss-next-label">Next Commander</span>: <span id="boss-timer">600</span>s (~<span id="boss-minutes">10</span>min)</div>
             </div>
             <div id="boss-reward" style="display:none;" class="boss-reward">
               🎁 +<span id="boss-gold">0</span>💰 +<span id="boss-exp">0</span>EXP
-              <button class="btn btn-gold btn-sm" onclick="claimBossRewardWithAd();">📺 <span id="boss-double-btn">Double Claim</span></button>
+              <button class="btn btn-ghost btn-sm" id="boss-claim-btn" onclick="claimBossReward();">领取</button>
+              <button class="btn btn-gold btn-sm" id="boss-double-btn" onclick="claimBossRewardWithAd();">📺 双倍领取</button>
             </div>
           </div>
 
@@ -136,39 +325,44 @@
             🔁 <span id="buff-label">Double Rewards</span>: <span id="buff-timer">0</span>s
           </div>
 
-          <!-- 建筑产出汇总 -->
+          <!-- 基地产出 -->
           <div id="building-production-summary" style="font-size:0.8em; color:#888; margin-top:6px; border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">
-            🏗️ Building: 0💰/s 0⛏️/s 0🌾/s
+            🏗️ Base: 0💰/s 0⛏️/s 0🌾/s
           </div>
 
-          <!-- 士兵汇总 -->
+          <!-- 兵力 -->
           <div id="soldier-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
             🪖 Soldiers: 0/0 active | 🌾 0.00/s
           </div>
 
-          <!-- 舰队汇总 -->
+          <!-- 舰队 -->
           <div id="fleet-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
             🚢 Fleet: 0/0 unlocked | ⚡ 0 CP
           </div>
 
-          <!-- 科技汇总 -->
+          <!-- 科技 -->
           <div id="tech-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
             🔬 Tech: 0 levels | ⚡ 0 TP
           </div>
 
-          <!-- 装备汇总 -->
+          <!-- 军备 -->
           <div id="equipment-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
-            🗡️ Gear: 0 levels | ⚡ +0 CP
+            🗡️ Armaments: 0 levels | ⚡ +0 CP
           </div>
 
-          <!-- 每日任务汇总 -->
+          <!-- 每日任务 -->
           <div id="daily-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
             📋 Daily: 0/0
           </div>
 
-          <!-- 成就汇总 -->
+          <!-- 功勋 -->
           <div id="achievement-summary" style="font-size:0.8em; color:#888; margin-top:4px;">
             🏆 Achievements: 0/0 (0%)
+          </div>
+
+          <!-- 升级队列 -->
+          <div id="upgrade-queue-status" style="font-size:0.8em; color:#7bed9f; margin-top:4px;">
+            ✅ All upgrades complete
           </div>
 
           <!-- 事件状态 -->
@@ -181,17 +375,17 @@
         <!-- ====== 右列 ====== -->
         <div class="glass-card">
 
-          <!-- 晋升考核 -->
+          <!-- 晋升试炼 -->
           <div class="promo-area">
             <div class="promo-title" id="promo-label">⭐ Promotion Trial</div>
 
             <div id="promotion-ready" style="display:none;">
-              <div class="promo-stars-full" id="stars-full">✅ ★★★★★ Ready to Promote!</div>
+              <div class="promo-stars-full" id="stars-full">✅ ★★★★★ Battle Stars Full! Ready to Promote!</div>
 
               <div class="promo-buttons">
                 <button class="promo-btn" id="btn-normal-promote" onclick="handlePromote('normal');">
                   <span class="promo-icon">⚔️</span>
-                  <span class="promo-name">Standard</span>
+                  <span class="promo-name">Standard Trial</span>
                   <span class="promo-rate">50%</span>
                   <span class="promo-cost" id="normal-cost">Cost: 2,000 EXP</span>
                   <span class="promo-penalty">Fail: -50% EXP</span>
@@ -220,20 +414,22 @@
             </div>
 
             <div id="promotion-not-ready" style="color:#888; font-size:0.9em; margin:6px 0;">
-              ★ <span id="promo-need">Collect 5 stars to promote</span> (<span id="stars-progress">0</span>/5)
+              ★ <span id="promo-need">Earn 5 Battle Stars to promote</span> (<span id="stars-progress">0</span>/5)
             </div>
           </div>
 
-          <!-- 功能按钮（8个） -->
-          <div class="grid-3" style="grid-template-columns: repeat(4, 1fr);">
+          <!-- 功能按钮（10个 - 新增转生） -->
+          <div class="grid-3" style="grid-template-columns: repeat(3, 1fr);">
             <button class="btn btn-ghost" id="btn-rank" onclick="showRankView();">🎖 Ranks</button>
-            <button class="btn btn-ghost" id="btn-building" onclick="showBuildingView();">🏗️ Buildings</button>
+            <button class="btn btn-ghost" id="btn-building" onclick="showBuildingView();">🏗️ Facilities</button>
             <button class="btn btn-ghost" id="btn-fleet" onclick="showFleetView();">🚢 Fleet</button>
             <button class="btn btn-ghost" id="btn-tech" onclick="showTechView();">🔬 Tech</button>
             <button class="btn btn-ghost" id="btn-soldier" onclick="showSoldierView();">🪖 Soldiers</button>
-            <button class="btn btn-ghost" id="btn-equip" onclick="showEquipmentView();">🗡️ Equipment</button>
+            <button class="btn btn-ghost" id="btn-equip" onclick="showEquipmentView();">🗡️ Armaments</button>
             <button class="btn btn-ghost" id="btn-daily" onclick="showDailyView();">📋 Daily</button>
             <button class="btn btn-ghost" id="btn-achievement" onclick="showAchievementView();">🏆 Achievements</button>
+            <button class="btn btn-ghost" id="btn-login" onclick="showLoginView();">📅 Login</button>
+            <button class="btn btn-ghost" id="btn-prestige" onclick="showPrestigeView();">🔄 Prestige</button>
           </div>
 
           <!-- 底部操作 -->
@@ -274,11 +470,13 @@
   <script src="./js/core/config.js"></script>
   <script src="./js/core/lang.js"></script>
   <script src="./js/core/utils.js"></script>
+  <script src="./js/core/audio.js"></script>
 
   <!-- 数据层 -->
   <script src="./js/data/ranks.js"></script>
   <script src="./js/data/player.js"></script>
   <script src="./js/data/story.js"></script>
+  <script src="./js/data/battle_logs.js"></script>
 
   <!-- 系统层 -->
   <script src="./js/systems/combat.js"></script>
@@ -292,15 +490,17 @@
   <script src="./js/systems/daily.js"></script>
   <script src="./js/systems/achievements.js"></script>
   <script src="./js/systems/equipment.js"></script>
+  <script src="./js/systems/upgrade_queue.js"></script>
+  <script src="./js/systems/prestige.js"></script>
 
   <!-- 辅助层 -->
   <script src="./js/helpers/security.js"></script>
   <script src="./js/helpers/save.js"></script>
   <script src="./js/helpers/offline.js"></script>
-  <script src="./js/helpers/ads.js"></script>
-<!-- ★★★★★ CrazyGames SDK 辅助（等开通后取消注释） ★★★★★ -->
-<!-- <script src="./js/helpers/crazygames_sdk.js"></script> -->
-<!-- <script src="./js/helpers/crazygames_leaderboard.js"></script> -->
+  <script src="./js/helpers/monetization.js"></script>
+  <!-- ★★★★★ CrazyGames SDK 辅助（等开通后取消注释） ★★★★★ -->
+  <!-- <script src="./js/helpers/crazygames_sdk.js"></script> -->
+  <!-- <script src="./js/helpers/crazygames_leaderboard.js"></script> -->
 
   <!-- UI层 -->
   <script src="./js/ui/components.js"></script>
@@ -309,6 +509,7 @@
 
   <!-- 流程层 -->
   <script src="./js/flow/tutorial.js"></script>
+  <script src="./js/flow/guide.js"></script>
   <script src="./js/flow/main.js"></script>
 
   <!-- SDK -->

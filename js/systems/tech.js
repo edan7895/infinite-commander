@@ -1,5 +1,5 @@
 // ============================================================
-// tech.js — Tech Tree System (8 lines, 40 levels each)
+// tech.js — Tech Tree System (Part 5 - 带研究队列)
 // ============================================================
 
 // ---------- Get tech data ----------
@@ -32,7 +32,7 @@ function getTechPointCost() {
   return CONFIG.TECH.techPointCostPerLevel || 1;
 }
 
-// ---------- Get upgrade cost ----------
+// ---------- 获取升级消耗 ----------
 function getTechUpgradeCost(lineId) {
   const currentLevel = getTechLevel(lineId);
   const maxLevel = getTechMaxLevel();
@@ -44,12 +44,11 @@ function getTechUpgradeCost(lineId) {
   const techPointCost = getTechPointCost();
 
   const goldCost = Math.floor(goldBase * Math.pow(multiplier, currentLevel));
-  const techPointCostTotal = techPointCost;
 
-  return { gold: goldCost, techPoint: techPointCostTotal };
+  return { gold: goldCost, techPoint: techPointCost };
 }
 
-// ---------- Get tech effect ----------
+// ---------- 获取科技效果 ----------
 function getTechEffect(lineId) {
   const level = getTechLevel(lineId);
   const line = getTechLine(lineId);
@@ -76,7 +75,7 @@ function getAllTechEffects() {
   return effects;
 }
 
-// ---------- Upgrade tech ----------
+// ---------- 升级科技（使用队列） ----------
 function upgradeTech(lineId, useAd) {
   if (!player) return false;
 
@@ -99,28 +98,34 @@ function upgradeTech(lineId, useAd) {
     return false;
   }
 
+  // 检查是否已在队列中
+  if (isUpgrading('tech', lineId)) {
+    showToast('⏳ ' + (t('upgradeInProgress') || 'Research already in progress'));
+    return false;
+  }
+
   const cost = getTechUpgradeCost(lineId);
   if (!cost) {
     showToast(t('techMaxLevel') || 'Max level reached!');
     return false;
   }
 
-  // Check tech points availability (techPoints stored in player)
-  if (!player.techPoints) player.techPoints = 0;
-
+  // 广告加速模式
   if (useAd) {
     GameAds.reward('tech', function() {
+      // 立即完成
       if (!player.tech) player.tech = {};
       player.tech[lineId] = (player.tech[lineId] || 0) + 1;
-      // Gain tech point for leveling up
       player.techPoints = (player.techPoints || 0) + 1;
-      // Bonus every 10 levels
       if ((player.tech[lineId] || 0) % 10 === 0) {
         player.techPoints += 5;
-        showToast('🎯 +5 ' + (t('techPoint') || 'Tech Points') + ' (' + line.nameEn + ' Lv.' + player.tech[lineId] + ')');
       }
-      // Recalculate CP
-      player.combatPower = calcCombatPower();
+      if (typeof calcCombatPower === 'function') {
+        player.combatPower = calcCombatPower();
+      }
+      if (typeof updateDailyProgress === 'function') {
+        updateDailyProgress('tech', 1);
+      }
       showToast('✅ ' + (t('techUpgradedAd') || 'Tech researched! (Ad)'));
       if (typeof updateUI === 'function') updateUI();
     }, function() {
@@ -129,6 +134,7 @@ function upgradeTech(lineId, useAd) {
     return true;
   }
 
+  // 检查资源
   if (player.gold < cost.gold) {
     showToast(t('notEnoughGold') || 'Not enough gold! Need ' + formatNumber(cost.gold));
     return false;
@@ -139,85 +145,54 @@ function upgradeTech(lineId, useAd) {
     return false;
   }
 
+  // 扣除资源
   player.gold -= cost.gold;
   player.techPoints = (player.techPoints || 0) - cost.techPoint;
-  if (!player.tech) player.tech = {};
-  player.tech[lineId] = (player.tech[lineId] || 0) + 1;
 
-  // Gain tech point for leveling up
-  player.techPoints = (player.techPoints || 0) + 1;
-  // Bonus every 10 levels
-  if ((player.tech[lineId] || 0) % 10 === 0) {
-    player.techPoints += 5;
-    showToast('🎯 +5 ' + (t('techPoint') || 'Tech Points') + ' (' + line.nameEn + ' Lv.' + player.tech[lineId] + ')');
+  // 计算研究时间
+  const totalTime = getTechResearchTime(lineId);
+  if (totalTime <= 0) {
+    // 直接完成
+    if (!player.tech) player.tech = {};
+    player.tech[lineId] = (player.tech[lineId] || 0) + 1;
+    player.techPoints = (player.techPoints || 0) + 1;
+    if ((player.tech[lineId] || 0) % 10 === 0) {
+      player.techPoints += 5;
+    }
+    if (typeof calcCombatPower === 'function') {
+      player.combatPower = calcCombatPower();
+    }
+    if (typeof updateDailyProgress === 'function') {
+      updateDailyProgress('tech', 1);
+    }
+    showToast('✅ ' + (t('techUpgraded') || 'Tech researched!'));
+    if (typeof updateUI === 'function') updateUI();
+    return true;
   }
 
-  player.combatPower = calcCombatPower();
-
-  showToast('✅ ' + (t('techUpgraded') || 'Tech researched!'));
-  if (typeof updateUI === 'function') updateUI();
-  return true;
-}
-
-// ---------- Get tech stats for UI ----------
-function getTechStats() {
-  if (!player) return { totalLevels: 0, totalTechPoints: 0, lines: [] };
-
-  const lines = getTechLines();
-  let totalLevels = 0;
-  const lineList = [];
-
-  lines.forEach(function(line) {
-    const level = player.tech[line.id] || 0;
-    const isUnlocked = isTechUnlocked(line.id);
-    const maxLevel = getTechMaxLevel();
-    const effect = getTechEffect(line.id);
-    const effectKey = line.effect;
-    const effectDisplay = getEffectDisplay(effectKey, effect);
-
-    lineList.push({
-      id: line.id,
-      nameEn: line.nameEn,
-      nameZh: line.nameZh,
-      level: level,
-      maxLevel: maxLevel,
-      isUnlocked: isUnlocked,
-      isMaxed: level >= maxLevel,
-      unlockRank: line.unlockRank,
-      effect: effect,
-      effectDisplay: effectDisplay,
-      effectKey: effectKey
-    });
-
-    totalLevels += level;
-  });
-
-  return {
-    totalLevels: totalLevels,
-    totalTechPoints: player.techPoints || 0,
-    lines: lineList
-  };
-}
-
-function getEffectDisplay(effectKey, value) {
+  // 添加到队列
   const isZh = langCurrent === 'zh';
-  const prefix = value > 0 ? '+' : '';
-  const percent = (value * 100).toFixed(1);
-
-  const effectMap = {
-    cp: (isZh ? '⚔️ +' : '⚔️ +') + Math.floor(value) + ' CP',
-    income: (isZh ? '💰 +' : '💰 +') + percent + '%',
-    armor: (isZh ? '🛡️ -' : '🛡️ -') + percent + '%',
-    radar: (isZh ? '📡 -' : '📡 -') + percent + '%',
-    ai: (isZh ? '🤖 +' : '🤖 +') + percent + '%',
-    boss: (isZh ? '💥 +' : '💥 +') + percent + '%',
-    all: (isZh ? '🌟 +' : '🌟 +') + percent + '%'
+  const item = {
+    type: 'tech',
+    id: lineId,
+    nameEn: line.nameEn,
+    nameZh: line.nameZh,
+    totalTime: totalTime,
+    remainingTime: totalTime,
+    startTime: null,
+    status: 'pending',
+    targetLevel: currentLevel + 1
   };
 
-  return effectMap[effectKey] || (prefix + value);
+  const added = addUpgradeToQueue(item);
+  if (added) {
+    showToast('⏳ ' + (isZh ? '开始研究 ' + line.nameZh : 'Researching ' + line.nameEn));
+    if (typeof updateUI === 'function') updateUI();
+  }
+  return added;
 }
 
-// ---------- Apply tech effects to various systems ----------
+// ---------- 获取科技修改器 ----------
 function getTechModifiers() {
   const effects = getAllTechEffects();
   const modifiers = {
@@ -230,14 +205,13 @@ function getTechModifiers() {
     allBonus: 0
   };
 
-  // Map effect keys to modifier keys
   const effectMap = {
     firepower: 'cpBonus',
     armor: 'armorReduction',
     logistics: 'incomeBonus',
     radar: 'radarReduction',
     ai: 'aiBonus',
-    drone: 'cpBonus', // drone adds to cp
+    drone: 'cpBonus',
     missile: 'bossBonus',
     nuclear: 'allBonus'
   };
@@ -249,15 +223,49 @@ function getTechModifiers() {
     }
   }
 
-  // Drone also adds to cp (already handled)
-  // Nuclear adds to all stats
   if (modifiers.allBonus !== 0) {
-    // Apply allBonus to all other modifiers
-    const allBonus = modifiers.allBonus;
-    modifiers.cpBonus += allBonus * 0.5;
-    modifiers.incomeBonus += allBonus;
-    modifiers.armorReduction += allBonus * 0.5;
+    modifiers.cpBonus += modifiers.allBonus * 0.5;
+    modifiers.incomeBonus += modifiers.allBonus;
+    modifiers.armorReduction += modifiers.allBonus * 0.5;
   }
 
   return modifiers;
+}
+
+// ---------- 获取科技统计 ----------
+function getTechStats() {
+  if (!player) return { totalLevels: 0, totalTechPoints: 0, lines: [] };
+
+  const lines = getTechLines();
+  let totalLevels = 0;
+  const lineList = [];
+
+  lines.forEach(function(line) {
+    const level = player.tech[line.id] || 0;
+    const isUnlocked = isTechUnlocked(line.id);
+    const maxLevel = getTechMaxLevel();
+    const effect = getTechEffect(line.id);
+    const isQueued = isUpgrading('tech', line.id);
+
+    lineList.push({
+      id: line.id,
+      nameEn: line.nameEn,
+      nameZh: line.nameZh,
+      level: level,
+      maxLevel: maxLevel,
+      isUnlocked: isUnlocked,
+      isMaxed: level >= maxLevel,
+      unlockRank: line.unlockRank,
+      effect: effect,
+      isQueued: isQueued
+    });
+
+    totalLevels += level;
+  });
+
+  return {
+    totalLevels: totalLevels,
+    totalTechPoints: player.techPoints || 0,
+    lines: lineList
+  };
 }

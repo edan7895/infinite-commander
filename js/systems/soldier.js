@@ -1,5 +1,5 @@
 // ============================================================
-// soldier.js — Soldier System (Train, Consume, Death, Heal)
+// soldier.js — Soldier System (Part 5 - 带训练队列)
 // ============================================================
 
 // ---------- Get soldier limits ----------
@@ -32,7 +32,7 @@ function getTrainCost() {
 }
 
 function getHealCost() {
-  if (!player) return { gold: 999999, rice: 999999 };
+  if (!player) return { gold: 0, rice: 0 };
   const wounded = player.wounded || 0;
   if (wounded <= 0) return { gold: 0, rice: 0 };
   const goldCost = CONFIG.SOLDIER.healGoldBase + (wounded * CONFIG.SOLDIER.healGoldPerWounded);
@@ -55,11 +55,26 @@ function trainSoldier(useAd) {
     return false;
   }
 
+  // 检查是否已在训练队列中
+  if (isUpgrading('soldier', 'train')) {
+    showToast('⏳ ' + (t('upgradeInProgress') || 'Training already in progress'));
+    return false;
+  }
+
   const cost = getTrainCost();
 
+  // 广告加速模式
   if (useAd) {
     GameAds.reward('soldier', function() {
-      player.soldiers = (player.soldiers || 0) + 1;
+      // 立即完成训练
+      const count = 1;
+      player.soldiers = (player.soldiers || 0) + count;
+      if (typeof calcCombatPower === 'function') {
+        player.combatPower = calcCombatPower();
+      }
+      if (typeof updateDailyProgress === 'function') {
+        updateDailyProgress('soldier', count);
+      }
       showToast('✅ ' + (t('soldierTrainedAd') || 'Soldier trained! (Ad)'));
       if (typeof updateUI === 'function') updateUI();
     }, function() {
@@ -68,6 +83,7 @@ function trainSoldier(useAd) {
     return true;
   }
 
+  // 检查资源
   if (player.gold < cost.gold) {
     showToast(t('notEnoughGold') || 'Not enough gold! Need ' + formatNumber(cost.gold));
     return false;
@@ -78,13 +94,46 @@ function trainSoldier(useAd) {
     return false;
   }
 
+  // 扣除资源
   player.gold -= cost.gold;
   player.rice -= cost.rice;
-  player.soldiers = (player.soldiers || 0) + 1;
 
-  showToast('✅ ' + (t('soldierTrained') || 'Soldier trained!'));
-  if (typeof updateUI === 'function') updateUI();
-  return true;
+  // 计算训练时间
+  const totalTime = getSoldierTrainTime();
+  if (totalTime <= 0) {
+    // 直接完成
+    player.soldiers = (player.soldiers || 0) + 1;
+    if (typeof calcCombatPower === 'function') {
+      player.combatPower = calcCombatPower();
+    }
+    if (typeof updateDailyProgress === 'function') {
+      updateDailyProgress('soldier', 1);
+    }
+    showToast('✅ ' + (t('soldierTrained') || 'Soldier trained!'));
+    if (typeof updateUI === 'function') updateUI();
+    return true;
+  }
+
+  // 添加到队列
+  const isZh = langCurrent === 'zh';
+  const item = {
+    type: 'soldier',
+    id: 'train',
+    nameEn: 'Soldier Training',
+    nameZh: '士兵训练',
+    totalTime: totalTime,
+    remainingTime: totalTime,
+    startTime: null,
+    status: 'pending',
+    count: 1
+  };
+
+  const added = addUpgradeToQueue(item);
+  if (added) {
+    showToast('⏳ ' + (isZh ? '开始训练士兵' : 'Training soldier'));
+    if (typeof updateUI === 'function') updateUI();
+  }
+  return added;
 }
 
 // ---------- Heal wounded ----------
@@ -102,7 +151,6 @@ function healWounded(useAd) {
   if (useAd) {
     GameAds.reward('soldier', function() {
       player.wounded = 0;
-      player.soldiers = (player.soldiers || 0);
       showToast('✅ ' + (t('soldierHealedAd') || 'Wounded healed! (Ad)'));
       if (typeof updateUI === 'function') updateUI();
     }, function() {
@@ -130,7 +178,7 @@ function healWounded(useAd) {
   return true;
 }
 
-// ---------- Soldier consumption (called every second) ----------
+// ---------- Soldier consumption ----------
 function applySoldierConsumption() {
   if (!player) return;
   const activeSoldiers = getActiveSoldiers();
@@ -139,12 +187,9 @@ function applySoldierConsumption() {
   const consumption = activeSoldiers * CONFIG.SOLDIER.riceConsumptionPerSoldier;
   player.rice = Math.max(0, player.rice - consumption);
 
-  // If rice runs out, soldiers start dying (one per second when rice is 0)
   if (player.rice <= 0 && activeSoldiers > 0) {
-    // Kill one soldier per second when no rice
     if (player.soldiers > 0) {
       player.soldiers--;
-      // If there are wounded, reduce them first
       if (player.wounded > 0) {
         player.wounded--;
       }
@@ -154,24 +199,20 @@ function applySoldierConsumption() {
   }
 }
 
-// ---------- Soldier death in combat (called from combat.js) ----------
+// ---------- Soldier death in combat ----------
 function applySoldierDeath() {
   if (!player) return;
   const activeSoldiers = getActiveSoldiers();
   if (activeSoldiers <= 0) return;
 
-  // 30% chance to lose a soldier per combat tick
   if (Math.random() < CONFIG.SOLDIER.deathChance) {
-    // 20% chance it's a wounded soldier, 80% it's active
     if (player.wounded > 0 && Math.random() < 0.2) {
       player.wounded--;
     } else if (player.soldiers > 0) {
-      // Remove from active soldiers
       if (player.soldiers > 0) {
         player.soldiers--;
       }
     }
-    // 10% chance of wounding instead of death
     if (Math.random() < 0.1 && player.soldiers > 0) {
       player.wounded = (player.wounded || 0) + 1;
       player.soldiers--;
@@ -179,7 +220,7 @@ function applySoldierDeath() {
   }
 }
 
-// ---------- Get soldier stats for UI ----------
+// ---------- Get soldier stats ----------
 function getSoldierStats() {
   if (!player) return { total: 0, active: 0, wounded: 0, max: 0, consumption: 0 };
 
@@ -188,6 +229,7 @@ function getSoldierStats() {
   const active = total - wounded;
   const max = getMaxSoldiers();
   const consumption = active * CONFIG.SOLDIER.riceConsumptionPerSoldier;
+  const isTraining = isUpgrading('soldier', 'train');
 
-  return { total, active, wounded, max, consumption };
+  return { total, active, wounded, max, consumption, isTraining };
 }

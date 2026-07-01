@@ -1,18 +1,11 @@
 // ============================================================
-// config.js — All game configuration (Part 8)
+// config.js — All game configuration (Part 12)
 // ============================================================
 
 const CONFIG = {
-  // ---------- Promotion Costs ----------
-  PROMOTE: {
-    goldBase: 1000,
-    goldMultiplier: 2.0,
-    expBase: 2000,
-    expMultiplier: 1.5
-  },
+  // ---------- Promotion Costs (已移至 ranks.js) ----------
 
-  // ---------- Star Requirements ----------
-  STAR_REQUIREMENTS: [500, 1500, 4500, 13500],
+  // ---------- Star Requirements (已移至 ranks.js) ----------
 
   // ---------- Building System ----------
   BUILDINGS: {
@@ -63,7 +56,9 @@ const CONFIG = {
     healGoldBase: 100,
     healRiceBase: 50,
     healGoldPerWounded: 20,
-    healRicePerWounded: 10
+    healRicePerWounded: 10,
+    trainTimeBase: 10,
+    trainTimePerSoldier: 2
   },
 
   // ---------- Fleet System ----------
@@ -89,7 +84,9 @@ const CONFIG = {
     upgradeGoldBase: 500,
     upgradeIronBase: 50,
     upgradeCostMultiplier: 1.25,
-    cpPerLevel: 2
+    cpPerLevel: 2,
+    upgradeTimeBase: 30,
+    upgradeTimeMultiplier: 1.3
   },
 
   // ---------- Tech Tree ----------
@@ -116,7 +113,9 @@ const CONFIG = {
       ai: 0.02,
       boss: 0.05,
       all: 0.01
-    }
+    },
+    researchTimeBase: 60,
+    researchTimeMultiplier: 1.25
   },
 
   // ---------- Equipment System ----------
@@ -234,7 +233,16 @@ const CONFIG = {
         { nameEn: 'Genesis Core', nameZh: '创世核心' },
         { nameEn: 'Cosmic Core', nameZh: '宇宙核心' }
       ]
-    }
+    },
+    upgradeTimeBase: 15,
+    upgradeTimeMultiplier: 1.35
+  },
+
+  // ---------- Upgrade Queue ----------
+  UPGRADE_QUEUE: {
+    adReduceTime: 14400,
+    adCooldown: 300,
+    maxConcurrent: 3
   },
 
   // ---------- Daily Quests ----------
@@ -258,49 +266,6 @@ const CONFIG = {
     }
   },
 
-  // ---------- Achievements ----------
-  ACHIEVEMENTS: [
-    { id: 'kill_100', nameEn: 'Rookie Warrior', nameZh: '初出茅庐', descEn: 'Defeat 100 enemies', descZh: '击杀100个敌人', icon: '💀', target: 100, rewardGold: 500, rewardExp: 200, rewardTech: 0 },
-    { id: 'kill_1000', nameEn: 'Battle Veteran', nameZh: '战场老兵', descEn: 'Defeat 1,000 enemies', descZh: '击杀1,000个敌人', icon: '⚔️', target: 1000, rewardGold: 2000, rewardExp: 1000, rewardTech: 0 },
-    { id: 'kill_10000', nameEn: 'Killing Machine', nameZh: '杀戮机器', descEn: 'Defeat 10,000 enemies', descZh: '击杀10,000个敌人', icon: '🗡️', target: 10000, rewardGold: 10000, rewardExp: 5000, rewardTech: 0 },
-    { id: 'boss_10', nameEn: 'Boss Slayer', nameZh: '弑君者', descEn: 'Defeat 10 bosses', descZh: '击败10个Boss', icon: '👹', target: 10, rewardGold: 2000, rewardExp: 1000, rewardTech: 0 },
-    { id: 'boss_50', nameEn: 'Boss Hunter', nameZh: 'Boss猎人', descEn: 'Defeat 50 bosses', descZh: '击败50个Boss', icon: '🏹', target: 50, rewardGold: 8000, rewardExp: 4000, rewardTech: 0 },
-    { id: 'boss_200', nameEn: 'Boss Terminator', nameZh: 'Boss终结者', descEn: 'Defeat 200 bosses', descZh: '击败200个Boss', icon: '🔥', target: 200, rewardGold: 30000, rewardExp: 15000, rewardTech: 0 },
-    { id: 'gold_1m', nameEn: 'Millionaire', nameZh: '百万富翁', descEn: 'Earn 1,000,000 total gold', descZh: '累计获得1,000,000金币', icon: '💰', target: 1000000, rewardGold: 5000, rewardExp: 2000, rewardTech: 0 },
-    { id: 'gold_100m', nameEn: 'Billionaire', nameZh: '亿万富豪', descEn: 'Earn 100,000,000 total gold', descZh: '累计获得100,000,000金币', icon: '💎', target: 100000000, rewardGold: 50000, rewardExp: 20000, rewardTech: 0 },
-    { id: 'building_50', nameEn: 'Master Builder', nameZh: '建筑大师', descEn: 'Reach level 50 on any building', descZh: '任意建筑达到50级', icon: '🏗️', target: 50, rewardGold: 5000, rewardExp: 3000, rewardTech: 0 },
-    { id: 'building_80', nameEn: 'Building God', nameZh: '建筑之神', descEn: 'Reach level 80 on any building', descZh: '任意建筑达到80级', icon: '🏛️', target: 80, rewardGold: 20000, rewardExp: 10000, rewardTech: 0 },
-    { id: 'soldier_500', nameEn: 'Iron Legion', nameZh: '铁血军团', descEn: 'Own 500 soldiers', descZh: '拥有500个士兵', icon: '🪖', target: 500, rewardGold: 5000, rewardExp: 3000, rewardTech: 0 },
-    { id: 'soldier_2000', nameEn: 'Invincible Army', nameZh: '无敌军团', descEn: 'Own 2,000 soldiers', descZh: '拥有2,000个士兵', icon: '🏴', target: 2000, rewardGold: 20000, rewardExp: 10000, rewardTech: 0 },
-    { id: 'fleet_50', nameEn: 'Fleet Commander', nameZh: '舰队指挥官', descEn: 'Reach fleet total level 50', descZh: '舰队总等级达到50', icon: '🚢', target: 50, rewardGold: 8000, rewardExp: 4000, rewardTech: 0 },
-    { id: 'fleet_150', nameEn: 'Fleet Marshal', nameZh: '舰队元帅', descEn: 'Reach fleet total level 150', descZh: '舰队总等级达到150', icon: '⚓', target: 150, rewardGold: 30000, rewardExp: 15000, rewardTech: 0 },
-    { id: 'tech_50', nameEn: 'Tech Pioneer', nameZh: '科技先驱', descEn: 'Reach tech total level 50', descZh: '科技总等级达到50', icon: '🔬', target: 50, rewardGold: 5000, rewardExp: 3000, rewardTech: 10 },
-    { id: 'tech_200', nameEn: 'Tech Overlord', nameZh: '科技霸主', descEn: 'Reach tech total level 200', descZh: '科技总等级达到200', icon: '🧪', target: 200, rewardGold: 30000, rewardExp: 15000, rewardTech: 50 },
-    { id: 'equip_30', nameEn: 'Gear Collector', nameZh: '装备收藏家', descEn: 'Reach equipment total level 30', descZh: '装备总等级达到30', icon: '🗡️', target: 30, rewardGold: 5000, rewardExp: 3000, rewardTech: 0 },
-    { id: 'equip_60', nameEn: 'Gear Master', nameZh: '装备大师', descEn: 'Reach equipment total level 60', descZh: '装备总等级达到60', icon: '🛡️', target: 60, rewardGold: 20000, rewardExp: 10000, rewardTech: 0 },
-    { id: 'daily_5', nameEn: 'All-Rounder', nameZh: '全能战士', descEn: 'Complete 5 daily quests (total)', descZh: '完成5个每日任务（累计）', icon: '⭐', target: 5, rewardGold: 2000, rewardExp: 1000, rewardTech: 0 },
-    { id: 'rank_10', nameEn: 'Legendary Commander', nameZh: '传奇指挥官', descEn: 'Reach rank 10 (General)', descZh: '军阶达到10（上将）', icon: '👑', target: 10, rewardGold: 50000, rewardExp: 20000, rewardTech: 0 }
-  ],
-
-  // ---------- Events System ----------
-  EVENTS: {
-    // 最小间隔（秒）
-    minInterval: 60,
-    maxInterval: 120,
-    // 事件冷却（秒）
-    cooldown: 30
-  },
-
-  // ---------- Ads System ----------
-  ADS: {
-    // 广告冷却（秒）
-    cooldown: 5,
-    // 最大每日广告次数
-    maxDailyAds: 20,
-    // 模拟广告延迟（毫秒）
-    simDelay: 1500
-  },
-
   // ---------- Boss System ----------
   BOSS: {
     interval: 600,
@@ -313,9 +278,35 @@ const CONFIG = {
     expPerRank: 50
   },
 
+  // ---------- Events System ----------
+  EVENTS: {
+    minInterval: 30,
+    maxInterval: 120,
+    cooldown: 30
+  },
+
+  // ---------- Ads System ----------
+  ADS: {
+    cooldown: 5,
+    maxDailyAds: 20,
+    simDelay: 1500
+  },
+
   // ---------- Offline ----------
   OFFLINE: {
-    maxSeconds: 43200
+    maxSeconds: 43200 // 12 小时
+  },
+
+  // ===== ★★★ Part 12: 转生系统配置 ★★★ =====
+  PRESTIGE: {
+    // 需要达到的军阶才能转生（49 = 最终军阶）
+    minRank: 49,
+    // 每枚勋章的资源产出加成（百分比）
+    bonusPerMedal: 5.0, // 500%
+    // 转生重置保留的资源（部分保留）
+    keepGoldPercent: 0.1, // 保留 10% 金币
+    // 最大转生次数（防止无限增长）
+    maxPrestige: 20
   },
 
   // ---------- Starting Values ----------
@@ -330,7 +321,13 @@ const CONFIG = {
     tech: {},
     equipment: {},
     techPoints: 0,
-    adCount: 0
+    adCount: 0,
+    loginDays: 0,
+    upgradeQueue: [],
+    // ★★★ 转生数据 ★★★
+    prestigeCount: 0,
+    prestigeMedals: 0,
+    prestigeHistory: []
   },
 
   // ---------- Combat ----------
